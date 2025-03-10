@@ -19,6 +19,7 @@ async function getTokenHolders(
 ) {
   try {
     let wasLastPage = false;
+    
     const response = await axios.post(
       process.env.HELIUS_RPC_URL,
       {
