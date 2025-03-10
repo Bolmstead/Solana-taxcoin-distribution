@@ -3,10 +3,10 @@ const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
 
 const bs58 = require("bs58").default;
 
-const DISTRIBUTOR_WALLET_PRIVATE_KEY = process.env.MAIN_WALLET_PRIVATE_KEY;
+const DISTRIBUTOR_WALLET_PRIVATE_KEY = process.env.TEST_TAX_WALLET_PRIVATE_KEY;
 const DISTRIBUTOR_WALLET_TOKEN_ACCOUNT =
-  process.env.MAIN_WALLET_PWEASE_TOKEN_ACCOUNT;
-const MEME_COIN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
+  process.env.PIETRO_PAROLIN_TEST_TAX_WALLET_TOKEN_ACCOUNT;
+const MEME_COIN_ADDRESS = process.env.PIETRO_PAROLIN_COIN_ADDRESS;
 const MAX_TRANSACTION_SIZE = 1232;
 // Initialize connection to Solana network
 const getRpcUrl = () => {

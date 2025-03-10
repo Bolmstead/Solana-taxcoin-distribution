@@ -27,7 +27,7 @@ async function getTokenHolders(
         method: "getTokenAccounts",
         params: {
           mint: tokenMint.toBase58(),
-          limit: 60,
+          limit: 100,
           page: page,
         },
       },
@@ -60,13 +60,16 @@ async function getTokenHolders(
         }
         if (account.amount > minAmountOfHoldings) {
           const percentage = account.amount / totalSupply;
-          console.log("🚀 ~ percentage:", percentage);
-
+          console.log("🚀 ~ percentage: ", `%${percentage * 100}`);
+          if (percentage < 0.000001) {
+            continue;
+          }
           const tokenRewards = Math.floor(taxWalletBalance * percentage);
           console.log("🚀 ~ tokenRewards:", tokenRewards);
           currentAccounts[account.owner] = {
             reward: tokenRewards,
             tokenAccount: account.address,
+            percentage: percentage,
           };
         }
       }
@@ -87,6 +90,7 @@ const getAllTokenHolders = async (taxWalletBalance) => {
   let justKeepGoing = true;
   let page = 1;
   let accounts = {};
+  let totalPercentage = 0;
 
   if (!taxWalletBalance) {
     console.log("Tax wallet balance is 0");
@@ -107,6 +111,14 @@ const getAllTokenHolders = async (taxWalletBalance) => {
     }
     page++;
   }
+  for (const account of Object.keys(accounts)) {
+    console.log("🚀 ~ account:", account);
+    console.log("🚀 ~ accounts[account]:", accounts[account]);
+    console.log("🚀 ~ accounts[account].reward:", accounts[account].reward);
+    totalPercentage += accounts[account].percentage;
+    console.log("🚀 ~ totalPercentage:", totalPercentage);
+  }
+  console.log("accounts.length:: ", accounts.length);
   return accounts;
 };
 
@@ -123,7 +135,6 @@ if (require.main === module) {
       DISTRIBUTOR_WALLET_TOKEN_ACCOUNT
     );
     console.log("🚀 ~ taxWalletBalance:", taxWalletBalance);
-    taxWalletBalance = taxWalletBalance / 4;
     console.log("🚀 DIVIDED BY 4 taxWalletBalance:", taxWalletBalance);
     const holders = await getAllTokenHolders(taxWalletBalance);
     console.log("🚀 ~ holders:", holders);
