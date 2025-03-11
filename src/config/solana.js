@@ -1,12 +1,16 @@
 require("dotenv").config();
 const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
+import { createJupiterApiClient } from "@jup-ag/api";
 
 const bs58 = require("bs58").default;
 
 const DISTRIBUTOR_WALLET_PRIVATE_KEY = process.env.TEST_TAX_WALLET_PRIVATE_KEY;
-const DISTRIBUTOR_WALLET_TOKEN_ACCOUNT =
+const TAXED_MEMECOIN_ADDRESS = process.env.PWEASE_TEST_MEME_COIN_ADDRESS;
+const TAXED_WALLET_TOKEN_ACCOUNT =
+  process.env.PWEASE_TEST_TAX_WALLET_TOKEN_ACCOUNT;
+const DISTRIBUTING_REWARDS_TOKEN_ACCOUNT =
   process.env.PIETRO_PAROLIN_TEST_TAX_WALLET_TOKEN_ACCOUNT;
-const MEME_COIN_ADDRESS = process.env.PIETRO_PAROLIN_COIN_ADDRESS;
+const TARGET_MEME_COIN_ADDRESS = process.env.PIETRO_PAROLIN_COIN_ADDRESS;
 const MAX_TRANSACTION_SIZE = 1232;
 // Initialize connection to Solana network
 const getRpcUrl = () => {
@@ -53,10 +57,10 @@ try {
 // Token mint
 let tokenMint;
 try {
-  if (!MEME_COIN_ADDRESS) {
+  if (!TARGET_MEME_COIN_ADDRESS) {
     throw new Error("NO MEME COIN ADDRESS ");
   }
-  tokenMint = new PublicKey(MEME_COIN_ADDRESS);
+  tokenMint = new PublicKey(TARGET_MEME_COIN_ADDRESS);
   console.log("Token mint initialized:", tokenMint.toBase58());
 } catch (error) {
   console.error("Error initializing token mint:", error.message);
@@ -64,10 +68,21 @@ try {
   process.exit(1);
 }
 
+// Initialize Jupiter
+const heliusConnection = new Connection(
+  process.env.HELIUS_RPC_URL || "https://your-helius-or-triton-endpoint.com"
+);
+const jupiterAPI = createJupiterApiClient();
+
 module.exports = {
   connection,
   distributorWallet,
   tokenMint,
-  DISTRIBUTOR_WALLET_TOKEN_ACCOUNT,
+  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
   MAX_TRANSACTION_SIZE,
+  jupiter,
+  heliusConnection,
+  jupiterAPI,
+  TAXED_MEMECOIN_ADDRESS,
+  TAXED_WALLET_TOKEN_ACCOUNT,
 };

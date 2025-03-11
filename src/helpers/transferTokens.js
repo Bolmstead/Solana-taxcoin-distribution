@@ -14,7 +14,7 @@ const {
   distributorWallet,
   tokenMint,
   DECIMALS,
-  DISTRIBUTOR_WALLET_TOKEN_ACCOUNT,
+  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
   MAX_TRANSACTION_SIZE,
 } = require("../config/solana");
 const { createTransferInstruction } = require("@solana/spl-token");
@@ -64,7 +64,9 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
         toTokenAccount.toString()
       );
 
-      const fromTokenAccount = new PublicKey(DISTRIBUTOR_WALLET_TOKEN_ACCOUNT);
+      const fromTokenAccount = new PublicKey(
+        DISTRIBUTING_REWARDS_TOKEN_ACCOUNT
+      );
       console.log(
         "[Transfer] Sender token account:",
         fromTokenAccount.toString()

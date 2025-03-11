@@ -10,7 +10,8 @@
     "distribute": "node src/helpers/tokenDistribution.js",
     "checkBalance": "node src/helpers/checkBalance.js",
     "transfer": "node src/helpers/transferTokens.js",
-    "createWallet": "node src/helpers/createWallet.js"
+    "createWallet": "node src/helpers/createWallet.js",
+    "swap": "node src/helpers/swapTokens.js"
   },
   "keywords": [
     "solana",
@@ -21,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@jup-ag/api": "^6.0.40",
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.0",
     "axios": "^1.8.2",

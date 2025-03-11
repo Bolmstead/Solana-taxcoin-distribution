@@ -4,11 +4,12 @@ const {
   tokenMint,
   connection,
   distributorWallet,
-  DISTRIBUTOR_WALLET_TOKEN_ACCOUNT,
+  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
 } = require("../config/solana");
 const { LAMPORTS_PER_SOL } = require("@solana/web3.js");
 const { batchTransferTokens } = require("./transferTokens");
 const { checkBalance } = require("./checkBalance");
+const { swapAllTokens } = require("../jupiter");
 require("dotenv").config();
 
 async function getTokenHolders(
@@ -19,7 +20,7 @@ async function getTokenHolders(
 ) {
   try {
     let wasLastPage = false;
-    
+
     const response = await axios.post(
       process.env.HELIUS_RPC_URL,
       {
@@ -131,9 +132,18 @@ module.exports = {
 // Only run if called directly
 if (require.main === module) {
   const execute = async () => {
+    const swapResult = await swapAllTokens(
+      distributorWallet,
+      TAXED_MEMECOIN_ADDRESS,
+      TARGET_MEME_COIN_ADDRESS,
+      (slippageBps = 2000),
+      (priorityFee = 0.05)
+    );
+    console.log("🚀 ~ execute ~ swapResult:", swapResult);
+    return;
     let taxWalletBalance = await checkBalance(
       distributorWallet.publicKey.toString(),
-      DISTRIBUTOR_WALLET_TOKEN_ACCOUNT
+      DISTRIBUTING_REWARDS_TOKEN_ACCOUNT
     );
     console.log("🚀 ~ taxWalletBalance:", taxWalletBalance);
     console.log("🚀 DIVIDED BY 4 taxWalletBalance:", taxWalletBalance);

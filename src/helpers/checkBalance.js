@@ -4,7 +4,7 @@ const {
   connection,
   distributorWallet,
   tokenMint,
-  DISTRIBUTOR_WALLET_TOKEN_ACCOUNT,
+  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
 } = require("../config/solana");
 
 async function checkBalance(publicKeyString, tokenAccountString) {
@@ -42,7 +42,7 @@ if (require.main === module) {
 
   checkBalance(
     distributorWallet.publicKey.toString(),
-    DISTRIBUTOR_WALLET_TOKEN_ACCOUNT
+    DISTRIBUTING_REWARDS_TOKEN_ACCOUNT
   ).then(
     () => process.exit(0),
     (err) => {
