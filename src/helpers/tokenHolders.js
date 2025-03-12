@@ -5,6 +5,9 @@ const {
   connection,
   distributorWallet,
   DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
+  TAXED_MEMECOIN_ADDRESS,
+  TARGET_MEME_COIN_ADDRESS,
+  TAXED_WALLET_TOKEN_ACCOUNT,
 } = require("../config/solana");
 const { LAMPORTS_PER_SOL } = require("@solana/web3.js");
 const { batchTransferTokens } = require("./transferTokens");
@@ -131,15 +134,17 @@ module.exports = {
 
 // Only run if called directly
 if (require.main === module) {
+  console.log("🚀 ~ execute ~ TAXED_MEMECOIN_ADDRESS:", TAXED_MEMECOIN_ADDRESS);
+
   const execute = async () => {
     const swapResult = await swapAllTokens(
       distributorWallet,
+      TAXED_WALLET_TOKEN_ACCOUNT,
       TAXED_MEMECOIN_ADDRESS,
       TARGET_MEME_COIN_ADDRESS,
       (slippageBps = 2000),
       (priorityFee = 0.05)
     );
-    console.log("🚀 ~ execute ~ swapResult:", swapResult);
     return;
     let taxWalletBalance = await checkBalance(
       distributorWallet.publicKey.toString(),

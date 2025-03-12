@@ -11,7 +11,8 @@
     "checkBalance": "node src/helpers/checkBalance.js",
     "transfer": "node src/helpers/transferTokens.js",
     "createWallet": "node src/helpers/createWallet.js",
-    "swap": "node src/helpers/swapTokens.js"
+    "swap": "node src/helpers/swapTokens.js",
+    "withdrawTaxes": "node src/helpers/withdrawTaxes.js"
   },
   "keywords": [
     "solana",
@@ -28,6 +29,7 @@
     "axios": "^1.8.2",
     "bs58": "^6.0.0",
     "dotenv": "^16.4.7",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "promise-retry": "^2.0.1"
   }
 }

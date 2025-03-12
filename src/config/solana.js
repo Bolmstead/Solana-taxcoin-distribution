@@ -1,16 +1,15 @@
 require("dotenv").config();
 const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
-import { createJupiterApiClient } from "@jup-ag/api";
-
-const bs58 = require("bs58").default;
+const bs58 = require("bs58");
 
 const DISTRIBUTOR_WALLET_PRIVATE_KEY = process.env.TEST_TAX_WALLET_PRIVATE_KEY;
-const TAXED_MEMECOIN_ADDRESS = process.env.PWEASE_TEST_MEME_COIN_ADDRESS;
+const TAXED_MEMECOIN_ADDRESS = process.env.PIETRO_PAROLIN_COIN_ADDRESS;
 const TAXED_WALLET_TOKEN_ACCOUNT =
-  process.env.PWEASE_TEST_TAX_WALLET_TOKEN_ACCOUNT;
-const DISTRIBUTING_REWARDS_TOKEN_ACCOUNT =
   process.env.PIETRO_PAROLIN_TEST_TAX_WALLET_TOKEN_ACCOUNT;
-const TARGET_MEME_COIN_ADDRESS = process.env.PIETRO_PAROLIN_COIN_ADDRESS;
+const DISTRIBUTING_REWARDS_TOKEN_ACCOUNT =
+  process.env.PWEASE_TEST_TAX_WALLET_TOKEN_ACCOUNT;
+const TARGET_MEME_COIN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
+console.log("🚀 ~ TARGET_MEME_COIN_ADDRESS:", TARGET_MEME_COIN_ADDRESS);
 const MAX_TRANSACTION_SIZE = 1232;
 // Initialize connection to Solana network
 const getRpcUrl = () => {
@@ -43,7 +42,7 @@ try {
   if (!DISTRIBUTOR_WALLET_PRIVATE_KEY) {
     throw new Error("WALLET is not set in .env file");
   }
-  const privateKeyBytes = bs58.decode(DISTRIBUTOR_WALLET_PRIVATE_KEY);
+  const privateKeyBytes = bs58.default.decode(DISTRIBUTOR_WALLET_PRIVATE_KEY);
   distributorWallet = Keypair.fromSecretKey(privateKeyBytes);
   console.log(
     "Wallet initialized successfully. Public key:",
@@ -68,21 +67,13 @@ try {
   process.exit(1);
 }
 
-// Initialize Jupiter
-const heliusConnection = new Connection(
-  process.env.HELIUS_RPC_URL || "https://your-helius-or-triton-endpoint.com"
-);
-const jupiterAPI = createJupiterApiClient();
-
 module.exports = {
   connection,
   distributorWallet,
   tokenMint,
   DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
   MAX_TRANSACTION_SIZE,
-  jupiter,
-  heliusConnection,
-  jupiterAPI,
   TAXED_MEMECOIN_ADDRESS,
   TAXED_WALLET_TOKEN_ACCOUNT,
+  TARGET_MEME_COIN_ADDRESS,
 };

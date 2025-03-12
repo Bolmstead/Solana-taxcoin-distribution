@@ -17,8 +17,8 @@ const {
 } = require("./utils/transactionSender.js");
 const { getSignature } = require("./utils/getSignature.js");
 const dotenv = require("dotenv");
-const { heliusConnection, jupiterAPI } = require("../config/solana.js");
 const { checkBalance } = require("../helpers/checkBalance.js");
+const { connection } = require("../config/solana.js");
 
 dotenv.config();
 
@@ -58,6 +58,7 @@ async function getQuote(inputMint, outputMint, amount, slippageBps) {
 
 async function getSwapResponse(wallet, quote) {
   // Get serialized transaction
+  console.log("getSwapResponse wallet: ", wallet);
   const swapResponse = await jupiterAPI.swapPost({
     swapRequest: {
       quoteResponse: quote,
@@ -77,6 +78,7 @@ async function getSwapResponse(wallet, quote) {
 
 async function swapAllTokens(
   walletKeypair,
+  taxedWalletTokenAccount,
   inputMint,
   outputMint,
   slippageBps = 2000,
@@ -92,7 +94,7 @@ async function swapAllTokens(
   `);
 
   // Early validation to prevent unnecessary processing
-  if (!outputMint || !inputMint || !walletSecretKey) {
+  if (!outputMint || !inputMint || !walletKeypair) {
     console.error("❌ Missing required parameters for swapAllTokens");
     return null;
   }
@@ -101,19 +103,26 @@ async function swapAllTokens(
     return null;
   }
 
-  const amountToBuyLamports = amountToBuy * LAMPORTS_PER_SOL;
-
   try {
     if (!walletKeypair) {
       console.error("❌ Wallet not found");
       return null;
     }
 
-    const balance = await getTokenBalance(inputMint, walletKeypair);
+    const balance = await checkBalance(
+      walletKeypair.publicKey.toString(),
+      taxedWalletTokenAccount
+    );
     console.log(`💰 Current Token Balance:`, balance);
 
     // Get quote and prepare swap
-    const quote = await getQuote(inputMint, outputMint, balance, slippageBps);
+    const quote = await getQuote(
+      inputMint,
+      outputMint,
+      balance,
+      slippageBps,
+      priorityFee
+    );
     console.log(`📈 Swap Quote Received:`, JSON.stringify(quote, null, 2));
 
     if (!quote) {
@@ -121,9 +130,8 @@ async function swapAllTokens(
       return null;
     }
 
-    return;
-
     const swapResponse = await getSwapResponse(walletKeypair, quote);
+    console.log("🚀 ~ swapResponse:", swapResponse);
     if (!swapResponse) {
       console.error("Failed to get swap response");
       return null;
@@ -144,7 +152,7 @@ async function swapAllTokens(
     const serializedTx = transaction.serialize();
 
     const txResponse = await transactionSenderAndConfirmationWaiter({
-      connection: heliusConnection,
+      connection: connection,
       serializedTransaction: Buffer.from(serializedTx),
       blockhashWithExpiryBlockHeight: {
         blockhash: transaction.message.recentBlockhash,
@@ -186,14 +194,14 @@ async function getTokenBalance(tokenMint, keyPair) {
     );
 
     try {
-      const account = await getAccount(heliusConnection, tokenAccount);
+      const account = await getAccount(connection, tokenAccount);
       console.log(
         `📋 Token Account Details:`,
         JSON.stringify(account, null, 2)
       );
 
       // Get mint info to get decimals
-      const mintInfo = await getMint(heliusConnection, mintPubkey);
+      const mintInfo = await getMint(connection, mintPubkey);
       console.log(`ℹ️ Token Mint Info:`, JSON.stringify(mintInfo, null, 2));
       const decimals = mintInfo.decimals;
       console.log(`🔢 Token Decimals: ${decimals}`);
@@ -268,7 +276,7 @@ async function sellTokenPercent(
     console.log(`📂 Token Account Found: ${userTokenAccount.toString()}`);
 
     console.log(`💰 Checking Current Balance...`);
-    const tokenBalance = await heliusConnection.getTokenAccountBalance(
+    const tokenBalance = await connection.getTokenAccountBalance(
       userTokenAccount
     );
     let { amount, decimals, uiAmount } = tokenBalance.value;
@@ -327,7 +335,7 @@ async function sellTokenPercent(
     const serializedTx = transaction.serialize();
 
     const txResponse = await transactionSenderAndConfirmationWaiter({
-      connection: heliusConnection,
+      connection: connection,
       serializedTransaction: Buffer.from(serializedTx),
       blockhashWithExpiryBlockHeight: {
         blockhash: transaction.message.recentBlockhash,

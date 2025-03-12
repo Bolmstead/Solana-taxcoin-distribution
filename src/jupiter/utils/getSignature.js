@@ -1,4 +1,4 @@
-const bs58 = require("bs58");
+const bs58 = require("bs58").default;
 const { Transaction, VersionedTransaction } = require("@solana/web3.js");
 
 /**
