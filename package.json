@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Solana token distribution bot that automatically distributes tokens to holders",
   "main": "src/index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,7 +13,8 @@
     "transfer": "node src/helpers/transferTokens.js",
     "createWallet": "node src/helpers/createWallet.js",
     "swap": "node src/helpers/swapTokens.js",
-    "withdrawTaxes": "node src/helpers/withdrawTaxes.js"
+    "withdrawTaxes": "node src/helpers/withdrawTaxes.js",
+    "solana": "node src/config/solana.js"
   },
   "keywords": [
     "solana",

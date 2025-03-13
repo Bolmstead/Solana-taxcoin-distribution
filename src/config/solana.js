@@ -1,21 +1,15 @@
 require("dotenv").config();
 const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
+const { getAssociatedTokenAddress } = require("@solana/spl-token");
 const bs58 = require("bs58");
 
-const DISTRIBUTOR_WALLET_PRIVATE_KEY = process.env.TEST_WITHDRAW_AUTHORITY_PRIVATE_KEY;
-const DISTRIBUTOR_WALLET_PUBLIC_KEY = process.env.TEST_WITHDRAW_AUTHORITY_PUBLIC_KEY;
-const DISTRIBUTOR_WALLET_TOKEN_ACCOUNT = process.env.TEST_WITHDRAW_AUTHORITY_TOKEN_ACCOUNT;
-const TAXED_WALLET_TOKEN_ACCOUNT =
-  process.env.PIETRO_PAROLIN_TEST_TAX_WALLET_TOKEN_ACCOUNT;
+const TAXED_TOKEN_ADDRESS = process.env.TEST_BROC_COIN_ADDRESS;
+const REWARDS_TOKEN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
+const DISTRIBUTOR_WALLET_PRIVATE_KEY =
+  process.env.TEST_WITHDRAW_AUTHORITY_PRIVATE_KEY;
+const decimals = 6;
+const taxedTokenSupply = 1000000000;
 
-
-const TAXED_MEMECOIN_ADDRESS = process.env.PIETRO_PAROLIN_COIN_ADDRESS;
-
-const DISTRIBUTING_REWARDS_TOKEN_ACCOUNT =
-  process.env.PWEASE_TEST_TAX_WALLET_TOKEN_ACCOUNT;
-const TARGET_MEME_COIN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
-console.log("🚀 ~ TARGET_MEME_COIN_ADDRESS:", TARGET_MEME_COIN_ADDRESS);
-const MAX_TRANSACTION_SIZE = 1232;
 // Initialize connection to Solana network
 const getRpcUrl = () => {
   if (
@@ -59,26 +53,72 @@ try {
 }
 
 // Token mint
-let tokenMint;
+let taxedTokenKeypair;
 try {
-  if (!TARGET_MEME_COIN_ADDRESS) {
+  if (!TAXED_TOKEN_ADDRESS) {
     throw new Error("NO MEME COIN ADDRESS ");
   }
-  tokenMint = new PublicKey(TARGET_MEME_COIN_ADDRESS);
-  console.log("Token mint initialized:", tokenMint.toBase58());
+  taxedTokenKeypair = new PublicKey(TAXED_TOKEN_ADDRESS);
+  console.log("Taxed Token mint initialized:", taxedTokenKeypair.toBase58());
 } catch (error) {
   console.error("Error initializing token mint:", error.message);
-
   process.exit(1);
+}
+
+// Token mint
+let rewardsTokenKeypair;
+try {
+  if (!REWARDS_TOKEN_ADDRESS) {
+    throw new Error("NO MEME COIN ADDRESS ");
+  }
+  rewardsTokenKeypair = new PublicKey(REWARDS_TOKEN_ADDRESS);
+  console.log(
+    "Rewards Token mint initialized:",
+    rewardsTokenKeypair.toBase58()
+  );
+} catch (error) {
+  console.error("Error initializing token mint:", error.message);
+  process.exit(1);
+}
+
+// Token accounts
+let distributorWalletTaxedTokenAccount;
+let distributorWalletRewardsTokenAccount;
+
+// Initialize token accounts
+async function initializeTokenAccounts() {
+  try {
+    // Distributor wallet Taxed token account
+    distributorWalletTaxedTokenAccount = await getAssociatedTokenAddress(
+      taxedTokenKeypair,
+      distributorWallet.publicKey
+    );
+
+    console.log(
+      "Token account for wallet distributorWalletTaxedTokenAccount",
+      distributorWalletTaxedTokenAccount
+    );
+
+    // Distributor wallet Rewards token account
+    distributorWalletRewardsTokenAccount = await getAssociatedTokenAddress(
+      rewardsTokenKeypair,
+      distributorWallet.publicKey
+    );
+    console.log(
+      "Token account for wallet distributorWalletRewardsTokenAccount",
+      distributorWalletRewardsTokenAccount
+    );
+  } catch (error) {
+    console.error("Error initializing token accounts:", error.message);
+    process.exit(1);
+  }
 }
 
 module.exports = {
   connection,
   distributorWallet,
-  tokenMint,
-  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
-  MAX_TRANSACTION_SIZE,
-  TAXED_MEMECOIN_ADDRESS,
-  TAXED_WALLET_TOKEN_ACCOUNT,
-  TARGET_MEME_COIN_ADDRESS,
+  taxedTokenKeypair,
+  rewardsTokenKeypair,
+  decimals,
+  taxedTokenSupply,
 };

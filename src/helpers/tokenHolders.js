@@ -4,19 +4,22 @@ const {
   tokenMint,
   connection,
   distributorWallet,
-  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
-  TAXED_MEMECOIN_ADDRESS,
+  TAXED_TOKEN_ADDRESS,
   TARGET_MEME_COIN_ADDRESS,
   TAXED_WALLET_TOKEN_ACCOUNT,
+  taxedTokenKeypair,
+  rewardsTokenKeypair,
+  decimals,
+  taxedTokenSupply,
 } = require("../config/solana");
 
-const { LAMPORTS_PER_SOL } = require("@solana/web3.js");
+const { LAMPORTS_PER_SOL, Keypair } = require("@solana/web3.js");
 const { batchTransferTokens } = require("./transferTokens");
 const { checkBalance } = require("./checkBalance");
 const { swapAllTokens } = require("../jupiter");
 require("dotenv").config();
 const { executeTaxWithdrawal } = require("./withdrawTaxes");
-
+const { initializeTokenAccounts } = require("./initializeTokenAccounts");
 async function getTokenHolders(
   page,
   currentAccounts,
@@ -26,6 +29,11 @@ async function getTokenHolders(
   try {
     let wasLastPage = false;
 
+    console.log(
+      "🚀 ~ getTokenHolders ~ taxedTokenKeypair.publicKey:",
+      taxedTokenKeypair.publicKey
+    );
+
     const response = await axios.post(
       process.env.HELIUS_RPC_URL,
       {
@@ -33,7 +41,7 @@ async function getTokenHolders(
         id: "my-id",
         method: "getTokenAccounts",
         params: {
-          mint: TAXED_MEMECOIN_ADDRESS,
+          mint: taxedTokenKeypair.publicKey,
           limit: 100,
           page: page,
         },
@@ -44,9 +52,9 @@ async function getTokenHolders(
         },
       }
     );
-    const decimalNumber = 10 ** process.env.DECIMALS;
+    const decimalNumber = 10 ** decimals;
     console.log("🚀 ~ decimalNumber:", decimalNumber);
-    const totalSupply = process.env.SUPPLY * decimalNumber;
+    const totalSupply = taxedTokenSupply * decimalNumber;
     console.log("🚀 ~ totalSupply:", totalSupply);
 
     console.log("Response data:", response.data);
@@ -94,6 +102,10 @@ async function getTokenHolders(
 }
 
 const getAllTokenHolders = async (totalRewardsBalance) => {
+  console.log(
+    "🚀 ~ getAllTokenHolders ~ totalRewardsBalance:",
+    totalRewardsBalance
+  );
   let justKeepGoing = true;
   let page = 1;
   let accounts = {};
@@ -135,42 +147,61 @@ module.exports = {
 
 // Only run if called directly
 if (require.main === module) {
-  console.log("🚀 ~ execute ~ TAXED_MEMECOIN_ADDRESS:", TAXED_MEMECOIN_ADDRESS);
-
   const execute = async () => {
     // unlock taxed tokens ❌
-    const taxWithdrawalResult = await executeTaxWithdrawal(
-      process.env.TEST_WITHDRAW_AUTHORITY_PRIVATE_KEY,
-      TAXED_MEMECOIN_ADDRESS
-    );
-    return;
-    // swap tokens ✅
-    const swapResult = await swapAllTokens(
-      distributorWallet,
-      TAXED_WALLET_TOKEN_ACCOUNT,
-      TAXED_MEMECOIN_ADDRESS,
-      TARGET_MEME_COIN_ADDRESS,
-      (slippageBps = 2000),
-      (priorityFee = 0.05)
-    );
-    console.log("🚀 ~ execute ~ swapResult:", swapResult);
-    const { status, totalTokenRewards } = swapResult;
-    console.log(
-      "🚀 ~ execute ~ status, totalTokenRewards :",
-      status,
-      totalTokenRewards
-    );
-    if (status === "error") {
-      console.error("Error swapping tokens:", swapResult.error);
+    try {
+      const {
+        distributorWalletTaxedTokenAccount,
+        distributorWalletRewardsTokenAccount,
+      } = await initializeTokenAccounts();
+      console.log(
+        "🚀 ~ execute ~ distributorWalletRewardsTokenAccount:",
+        distributorWalletRewardsTokenAccount
+      );
+      console.log(
+        "🚀 ~ execute ~ distributorWalletTaxedTokenAccount:",
+        distributorWalletTaxedTokenAccount
+      );
+
+      // withdraw taxes ❌
+      const taxWithdrawalResult = await executeTaxWithdrawal(
+        distributorWalletTaxedTokenAccount,
+        distributorWalletRewardsTokenAccount
+      );
+      console.log("🚀 ~ execute ~ taxWithdrawalResult:", taxWithdrawalResult);
       return;
+      // swap tokens ✅
+      const swapResult = await swapAllTokens(
+        distributorWallet,
+        TAXED_WALLET_TOKEN_ACCOUNT,
+        TAXED_TOKEN_ADDRESS,
+        TARGET_MEME_COIN_ADDRESS,
+        (slippageBps = 2000),
+        (priorityFee = 0.05)
+      );
+      console.log("🚀 ~ execute ~ swapResult:", swapResult);
+      const { status, totalTokenRewards } = swapResult;
+      console.log(
+        "🚀 ~ execute ~ status, totalTokenRewards :",
+        status,
+        totalTokenRewards
+      );
+
+      if (status === "error") {
+        console.error("Error swapping tokens:", swapResult.error);
+        return;
+      }
+      const holders = await getAllTokenHolders(totalTokenRewards);
+      console.log("🚀 ~ holders:", holders);
+      // transfer tokens ❌
+      const allSignatures = await batchTransferTokens(
+        holders,
+        totalTokenRewards
+      );
+      console.log("🚀 ~ allSignatures:", allSignatures);
+    } catch (error) {
+      // Handle error...
     }
-    // get token holders ✅
-    // double check % is correct ❌
-    const holders = await getAllTokenHolders(totalTokenRewards);
-    console.log("🚀 ~ holders:", holders);
-    // transfer tokens ❌
-    const allSignatures = await batchTransferTokens(holders, totalTokenRewards);
-    console.log("🚀 ~ allSignatures:", allSignatures);
   };
   execute();
 }

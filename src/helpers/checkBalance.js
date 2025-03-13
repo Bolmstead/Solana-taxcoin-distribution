@@ -3,8 +3,7 @@ const { TOKEN_PROGRAM_ID, getAccount } = require("@solana/spl-token");
 const {
   connection,
   distributorWallet,
-  tokenMint,
-  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
+  distributorWalletRewardsTokenAccount,
 } = require("../config/solana");
 
 async function checkBalance(publicKeyString, tokenAccountString) {
@@ -42,7 +41,7 @@ if (require.main === module) {
 
   checkBalance(
     distributorWallet.publicKey.toString(),
-    DISTRIBUTING_REWARDS_TOKEN_ACCOUNT
+    distributorWalletRewardsTokenAccount.toString()
   ).then(
     () => process.exit(0),
     (err) => {
