@@ -136,6 +136,7 @@ async function swapAllTokens(
       console.error("Failed to get swap response");
       return null;
     }
+    const totalTokenRewards = quote.outAmount;
 
     // Prepare transaction (reuse Buffer to avoid extra allocation)
     const transactionBuffer = Buffer.from(
@@ -174,10 +175,10 @@ async function swapAllTokens(
     console.log(
       `✅ Transaction successful: https://solscan.io/tx/${signature}`
     );
-    return true;
+    return { status: "success", totalTokenRewards };
   } catch (error) {
     console.error("Swap execution failed:", error);
-    return null;
+    return { status: "error", error: error.message };
   }
 }
 

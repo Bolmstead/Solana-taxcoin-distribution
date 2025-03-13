@@ -17,13 +17,17 @@ const {
   DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
   MAX_TRANSACTION_SIZE,
 } = require("../config/solana");
-const { createTransferInstruction } = require("@solana/spl-token");
+const {
+  createTransferInstruction,
+  getAccount,
+  createAssociatedTokenAccountInstruction,
+} = require("@solana/spl-token");
 const bs58 = require("bs58");
 
 /**
- * Send Solana from one wallet to multiple recipients in a single transaction
- * @param {string} fromPrivateKey - The private key of the sender wallet (bs58 encoded string)
- * @param {Array<{address: string, amountInSOL: number}>} recipients - Array of recipient objects with address and amount
+ * Send tokens from the distributor wallet to multiple recipients in a single transaction
+ * @param {Object} recipients - Object containing recipient addresses as keys and their reward details as values
+ * @param {number} balance - Current balance available for distribution
  * @returns {Promise<string>} - Transaction signature
  */
 async function transferTokensToMultipleAddresses(recipients, balance) {
@@ -33,6 +37,13 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
 
     let balanceTracker = Number(balance);
     console.log("[Transfer] Initial balance available:", balanceTracker);
+
+    // Get the distributor's token account
+    const fromTokenAccount = new PublicKey(DISTRIBUTING_REWARDS_TOKEN_ACCOUNT);
+    console.log(
+      "[Transfer] Distributor token account:",
+      fromTokenAccount.toString()
+    );
 
     // Add transfer instructions for each recipient
     for (const recipientAddress in recipients) {
@@ -56,21 +67,40 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
         balanceTracker
       );
 
-      const toTokenAccount = new PublicKey(
-        recipients[recipientAddress].tokenAccount
+      // Get the recipient's associated token account
+      const recipientPublicKey = new PublicKey(recipientAddress);
+      const toTokenAccount = await getAssociatedTokenAddress(
+        tokenMint,
+        recipientPublicKey
       );
       console.log(
         "[Transfer] Recipient token account:",
         toTokenAccount.toString()
       );
 
-      const fromTokenAccount = new PublicKey(
-        DISTRIBUTING_REWARDS_TOKEN_ACCOUNT
-      );
-      console.log(
-        "[Transfer] Sender token account:",
-        fromTokenAccount.toString()
-      );
+      // Check if the token account exists
+      try {
+        await getAccount(connection, toTokenAccount);
+        console.log("[Transfer] ✓ Recipient token account exists");
+      } catch (error) {
+        if (
+          error.message === "TokenAccountNotFoundError" ||
+          error.message.includes("Account does not exist")
+        ) {
+          console.log("[Transfer] Creating token account for recipient...");
+          // Create ATA instruction
+          const createAtaInstruction = createAssociatedTokenAccountInstruction(
+            distributorWallet.publicKey, // payer
+            toTokenAccount, // ata
+            recipientPublicKey, // owner
+            tokenMint // mint
+          );
+          transaction.add(createAtaInstruction);
+          console.log("[Transfer] ✓ ATA creation instruction added");
+        } else {
+          throw error;
+        }
+      }
 
       // Create transfer instruction
       const transferInstruction = createTransferInstruction(

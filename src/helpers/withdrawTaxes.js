@@ -12,14 +12,9 @@ const {
   getAccount,
 } = require("@solana/spl-token");
 const { connection } = require("../config/solana.js");
-const bs58 = require("bs58");
+const bs58 = require("bs58").default;
 require("dotenv").config();
 
-/**
- * Get the current balance of the withdraw authority
- * @param {PublicKey} tokenAccount Associated token account to check
- * @returns {Promise<number>} Balance in tokens
- */
 async function getWithdrawAuthorityBalance(tokenAccount) {
   console.log(
     `\n🔍 Checking balance for token account: ${tokenAccount.toString()}`
@@ -36,46 +31,42 @@ async function getWithdrawAuthorityBalance(tokenAccount) {
   }
 }
 
-/**
- * Execute tax withdrawal from the withdraw authority to the destination
- * @param {Object} params Parameters for tax withdrawal
- * @param {string} params.withdrawAuthoritySecretKey Secret key of the withdraw authority
- * @param {string} params.tokenMint Token mint address
- * @param {string} params.destinationAddress Destination wallet address
- * @returns {Promise<Object>} Transaction details
- */
-async function executeTaxWithdrawal({
+async function executeTaxWithdrawal(
   withdrawAuthoritySecretKey,
-  tokenMint: tokenMintAddress,
-  destinationAddress,
-}) {
+  tokenMintAddress
+) {
   try {
     console.log(`
 🚀 Initiating Tax Withdrawal:
+👜 withdrawAuthoritySecretKey: ${withdrawAuthoritySecretKey}
 💎 Token Mint: ${tokenMintAddress}
-📤 Destination: ${destinationAddress}
     `);
+
+    const privateKeyBytes = bs58.decode(withdrawAuthoritySecretKey);
+    const withdrawAuthorityKeyPair = Keypair.fromSecretKey(privateKeyBytes);
+    console.log(
+      `👛 Withdraw Authority Public Key: ${withdrawAuthorityKeyPair.publicKey.toString()}`
+    );
 
     // Initialize withdraw authority and token mint
     console.log("🔐 Initializing withdraw authority...");
-    const privateKeyBytes = bs58.decode(withdrawAuthoritySecretKey);
-    const withdrawAuthority = Keypair.fromSecretKey(privateKeyBytes);
-    console.log(
-      `👛 Withdraw Authority Public Key: ${withdrawAuthority.publicKey.toString()}`
-    );
 
     console.log("🏦 Initializing token mint...");
     const tokenMint = new PublicKey(tokenMintAddress);
+    console.log("🚀 ~ tokenMint:", tokenMint);
 
     // Convert destination address to PublicKey
     console.log("🎯 Processing destination address...");
-    const destinationPublicKey = new PublicKey(destinationAddress);
+    const destinationPublicKey = new PublicKey(
+      withdrawAuthorityKeyPair.publicKey
+    );
+    console.log("🚀 ~ destinationPublicKey:", destinationPublicKey);
 
     // Get the associated token accounts
     console.log("📋 Deriving associated token accounts...");
     const sourceTokenAccount = await getAssociatedTokenAddress(
       tokenMint,
-      withdrawAuthority.publicKey
+      withdrawAuthorityKeyPair.publicKey
     );
     console.log(`📤 Source Token Account: ${sourceTokenAccount.toString()}`);
 
@@ -109,7 +100,7 @@ async function executeTaxWithdrawal({
     const transferInstruction = createTransferInstruction(
       sourceTokenAccount,
       destinationTokenAccount,
-      withdrawAuthority.publicKey,
+      withdrawAuthorityKeyPair.publicKey,
       BigInt(adjustedAmount)
     );
     console.log("✅ Transfer instruction created!");
@@ -129,7 +120,7 @@ async function executeTaxWithdrawal({
     // Sign and send the transaction
     console.log("🖊️ Signing and sending transaction...");
     const signature = await sendAndConfirmTransaction(connection, transaction, [
-      withdrawAuthority,
+      withdrawAuthorityKeyPair,
     ]);
 
     console.log(`
@@ -137,7 +128,7 @@ async function executeTaxWithdrawal({
 📝 Transaction Details:
 🔗 Signature: ${signature}
 💰 sourceBalance: ${sourceBalance} tokens
-📤 From: ${withdrawAuthority.publicKey.toString()}
+📤 From: ${withdrawAuthorityKeyPair.publicKey.toString()}
 📥 To: ${destinationPublicKey.toString()}
 ⏰ Timestamp: ${new Date().toISOString()}
     `);
@@ -146,7 +137,7 @@ async function executeTaxWithdrawal({
     return {
       signature,
       sourceBalance,
-      source: withdrawAuthority.publicKey.toString(),
+      source: withdrawAuthorityKeyPair.publicKey.toString(),
       destination: destinationPublicKey.toString(),
       timestamp: new Date().toISOString(),
     };
@@ -239,61 +230,6 @@ async function getTaxWithdrawalHistory({
 ${error.stack}
     `);
     throw error;
-  }
-}
-
-// Example usage
-async function main() {
-  try {
-    console.log("🚀 Starting Tax Withdrawal Demo...");
-
-    const withdrawAuthoritySecretKey = process.env.DISCORD_BOT_PRIVATE_KEY;
-    console.log(
-      "🚀 ~ main ~ withdrawAuthoritySecretKey:",
-      withdrawAuthoritySecretKey
-    );
-    const tokenMint = "4Gq9ZZUrbB6z5PxzkPKucsnd6UmcoGpQkQD3KRjRFURV";
-    const destinationAddress = "F19p9Mso9Pr8AcroN8ZcNxVMNqWfFa3rDN93tVvJddna";
-
-    // Validate required parameters
-    console.log("🔍 Validating configuration...");
-    if (!withdrawAuthoritySecretKey || !tokenMint || !destinationAddress) {
-      console.error(`
-❌ Missing Required Environment Variables:
-${!withdrawAuthoritySecretKey ? "❌" : "✅"} WITHDRAW_AUTHORITY_SECRET_KEY
-${!tokenMint ? "❌" : "✅"} TOKEN_MINT
-${!destinationAddress ? "❌" : "✅"} DESTINATION_ADDRESS
-      `);
-      process.exit(1);
-    }
-    console.log("✅ Configuration validated!");
-
-    // Execute a tax withdrawal
-    console.log("\n📝 Executing tax withdrawal...");
-    const result = await executeTaxWithdrawal({
-      withdrawAuthoritySecretKey,
-      tokenMint,
-      destinationAddress,
-    });
-
-    console.log("\n📊 Withdrawal Result:", JSON.stringify(result, null, 2));
-
-    // Get withdrawal history
-    console.log("\n📚 Fetching transaction history...");
-    const history = await getTaxWithdrawalHistory({
-      withdrawAuthoritySecretKey,
-      limit: 5,
-    });
-    console.log("\n📜 Transaction History:", JSON.stringify(history, null, 2));
-
-    console.log("\n🎉 Demo completed successfully!");
-  } catch (error) {
-    console.error(`
-❌ Operation Failed:
-⚠️ Error: ${error.message}
-🔍 Stack Trace:
-${error.stack}
-    `);
   }
 }
 

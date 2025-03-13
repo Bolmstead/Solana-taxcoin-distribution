@@ -9,16 +9,18 @@ const {
   TARGET_MEME_COIN_ADDRESS,
   TAXED_WALLET_TOKEN_ACCOUNT,
 } = require("../config/solana");
+
 const { LAMPORTS_PER_SOL } = require("@solana/web3.js");
 const { batchTransferTokens } = require("./transferTokens");
 const { checkBalance } = require("./checkBalance");
 const { swapAllTokens } = require("../jupiter");
 require("dotenv").config();
+const { executeTaxWithdrawal } = require("./withdrawTaxes");
 
 async function getTokenHolders(
   page,
   currentAccounts,
-  taxWalletBalance,
+  totalRewardsBalance,
   minAmountOfHoldings = 1000
 ) {
   try {
@@ -31,7 +33,7 @@ async function getTokenHolders(
         id: "my-id",
         method: "getTokenAccounts",
         params: {
-          mint: tokenMint.toBase58(),
+          mint: TAXED_MEMECOIN_ADDRESS,
           limit: 100,
           page: page,
         },
@@ -69,11 +71,11 @@ async function getTokenHolders(
           if (percentage < 0.000001) {
             continue;
           }
-          const tokenRewards = Math.floor(taxWalletBalance * percentage);
+          const tokenRewards = Math.floor(totalRewardsBalance * percentage);
           console.log("🚀 ~ tokenRewards:", tokenRewards);
           currentAccounts[account.owner] = {
             reward: tokenRewards,
-            tokenAccount: account.address,
+
             percentage: percentage,
           };
         }
@@ -91,13 +93,13 @@ async function getTokenHolders(
   }
 }
 
-const getAllTokenHolders = async (taxWalletBalance) => {
+const getAllTokenHolders = async (totalRewardsBalance) => {
   let justKeepGoing = true;
   let page = 1;
   let accounts = {};
   let totalPercentage = 0;
 
-  if (!taxWalletBalance) {
+  if (!totalRewardsBalance) {
     console.log("Tax wallet balance is 0");
     return "No Tax Wallet Balance!!!";
   }
@@ -108,7 +110,7 @@ const getAllTokenHolders = async (taxWalletBalance) => {
     const { updatedAccounts, wasLastPage } = await getTokenHolders(
       page,
       accounts,
-      taxWalletBalance
+      totalRewardsBalance
     );
     accounts = updatedAccounts;
     if (wasLastPage) {
@@ -123,7 +125,6 @@ const getAllTokenHolders = async (taxWalletBalance) => {
     totalPercentage += accounts[account].percentage;
     console.log("🚀 ~ totalPercentage:", totalPercentage);
   }
-  console.log("accounts.length:: ", accounts.length);
   return accounts;
 };
 
@@ -137,6 +138,13 @@ if (require.main === module) {
   console.log("🚀 ~ execute ~ TAXED_MEMECOIN_ADDRESS:", TAXED_MEMECOIN_ADDRESS);
 
   const execute = async () => {
+    // unlock taxed tokens ❌
+    const taxWithdrawalResult = await executeTaxWithdrawal(
+      process.env.TEST_WITHDRAW_AUTHORITY_PRIVATE_KEY,
+      TAXED_MEMECOIN_ADDRESS
+    );
+    return;
+    // swap tokens ✅
     const swapResult = await swapAllTokens(
       distributorWallet,
       TAXED_WALLET_TOKEN_ACCOUNT,
@@ -145,16 +153,23 @@ if (require.main === module) {
       (slippageBps = 2000),
       (priorityFee = 0.05)
     );
-    return;
-    let taxWalletBalance = await checkBalance(
-      distributorWallet.publicKey.toString(),
-      DISTRIBUTING_REWARDS_TOKEN_ACCOUNT
+    console.log("🚀 ~ execute ~ swapResult:", swapResult);
+    const { status, totalTokenRewards } = swapResult;
+    console.log(
+      "🚀 ~ execute ~ status, totalTokenRewards :",
+      status,
+      totalTokenRewards
     );
-    console.log("🚀 ~ taxWalletBalance:", taxWalletBalance);
-    console.log("🚀 DIVIDED BY 4 taxWalletBalance:", taxWalletBalance);
-    const holders = await getAllTokenHolders(taxWalletBalance);
+    if (status === "error") {
+      console.error("Error swapping tokens:", swapResult.error);
+      return;
+    }
+    // get token holders ✅
+    // double check % is correct ❌
+    const holders = await getAllTokenHolders(totalTokenRewards);
     console.log("🚀 ~ holders:", holders);
-    const allSignatures = await batchTransferTokens(holders, taxWalletBalance);
+    // transfer tokens ❌
+    const allSignatures = await batchTransferTokens(holders, totalTokenRewards);
     console.log("🚀 ~ allSignatures:", allSignatures);
   };
   execute();
