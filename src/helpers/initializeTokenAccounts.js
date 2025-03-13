@@ -2,8 +2,8 @@ const { getAssociatedTokenAddress } = require("@solana/spl-token");
 const {
   connection,
   distributorWallet,
-  taxedTokenKeypair,
-  rewardsTokenKeypair,
+  taxedTokenMintAddress,
+  rewardsTokenMintAddress,
 } = require("../config/solana");
 
 // Initialize token accounts
@@ -11,24 +11,32 @@ async function initializeTokenAccounts() {
   try {
     // Distributor wallet Taxed token account
     const distributorWalletTaxedTokenAccount = await getAssociatedTokenAddress(
-      taxedTokenKeypair,
+      taxedTokenMintAddress,
       distributorWallet.publicKey
     );
 
     console.log(
-      "Token account for wallet distributorWalletTaxedTokenAccount",
+      "👾 Token account for wallet distributorWalletTaxedTokenAccount",
       distributorWalletTaxedTokenAccount
+    );
+    console.log(
+      "👾 Token account for wallet distributorWalletTaxedTokenAccount.toString()",
+      distributorWalletTaxedTokenAccount.toString()
     );
 
     // Distributor wallet Rewards token account
     const distributorWalletRewardsTokenAccount =
       await getAssociatedTokenAddress(
-        rewardsTokenKeypair,
+        rewardsTokenMintAddress,
         distributorWallet.publicKey
       );
     console.log(
-      "Token account for wallet distributorWalletRewardsTokenAccount",
+      "🪖 Token account for wallet distributorWalletRewardsTokenAccount",
       distributorWalletRewardsTokenAccount
+    );
+    console.log(
+      "🪖 Token account for wallet distributorWalletRewardsTokenAccount.toString()",
+      distributorWalletRewardsTokenAccount.toString()
     );
 
     return {

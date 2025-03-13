@@ -14,7 +14,8 @@
     "createWallet": "node src/helpers/createWallet.js",
     "swap": "node src/helpers/swapTokens.js",
     "withdrawTaxes": "node src/helpers/withdrawTaxes.js",
-    "solana": "node src/config/solana.js"
+    "solana": "node src/config/solana.js",
+    "testWithdraw": "node src/helpers/testWithdrawDemo.js"
   },
   "keywords": [
     "solana",
