@@ -11,7 +11,7 @@ const {
   distributorWalletRewardsTokenAccount,
 } = require("../config/solana");
 
-async function checkBalance(accountPublicKey) {
+async function checkBalance(accountPublicKey, tokenProgram) {
   console.log("💰 Checking token balance...");
 
   // Handle both PublicKey objects and string addresses
@@ -34,7 +34,7 @@ async function checkBalance(accountPublicKey) {
   console.log("👛 Token Account Public Key:", tokenAccountPublicKey.toString());
 
   try {
-    console.log("🥦 TOKEN_2022_PROGRAM_ID:: ", TOKEN_2022_PROGRAM_ID);
+    console.log("🥦 tokenProgram:: ", tokenProgram);
     const accountInfo = await connection.getAccountInfo(tokenAccountPublicKey);
     console.log("🍇 accountInfo:: ", accountInfo);
     console.log("🍇 Actual account owner:", accountInfo?.owner.toString());
@@ -42,11 +42,13 @@ async function checkBalance(accountPublicKey) {
       connection,
       tokenAccountPublicKey,
       "confirmed",
-      TOKEN_2022_PROGRAM_ID
+      tokenProgram
     );
-    console.error("✅ 2022 Token Program worked!");
 
-    console.log("📊 Token Account Info:", tokenAccountInfo);
+    console.log(
+      "✅ checkBalance Worked! Token Account Info:",
+      tokenAccountInfo
+    );
 
     const balance = Number(tokenAccountInfo.amount);
     console.log("💎 Current Balance:", balance);
@@ -54,23 +56,8 @@ async function checkBalance(accountPublicKey) {
     return balance;
   } catch (error) {
     if (error.name === "TokenInvalidAccountOwnerError") {
-      try {
-        console.error(
-          "❌ Token Program didn't work. Trying original token program"
-        );
-        const tokenAccountInfo = await getAccount(
-          connection,
-          tokenAccountPublicKey
-        );
-        console.error("✅ Old Token Program worked!");
-        const balance = Number(tokenAccountInfo.amount);
-        console.log("💎 Current Balance:", balance);
-        return balance;
-      } catch (error) {
-        console.error("❌ Neither token program worked 🤷🏾‍♀️");
-        console.log(error);
-        return "error";
-      }
+      console.error("❌ Token Program Didn't work 🤷🏾‍♀️");
+      console.log(error);
     } else if (error.name === "TokenAccountNotFoundError") {
       console.error("❌ Token account does not exist");
       return "error";

@@ -146,8 +146,7 @@ try {
   );
   withdrawAuthorityWallet = Keypair.fromSecretKey(privateKeyBytes);
   console.log(
-    "[Solana Config] 🔑 Withdraw Authority Wallet initialized successfully. Public key:",
-    withdrawAuthorityWallet.publicKey.toBase58()
+    "[Solana Config] 🔑 Withdraw Authority Wallet initialized successfully."
   );
 } catch (error) {
   console.error(

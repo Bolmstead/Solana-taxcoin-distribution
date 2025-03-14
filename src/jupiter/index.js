@@ -97,8 +97,7 @@ async function swapPercentageOfTokens(
   taxedWalletTokenAccount,
   inputMint,
   outputMint,
-  slippageBps = 2000,
-  priorityFee = 0.05
+  slippageBps = 1000
 ) {
   console.log(`
 🔄 Initiating Token Swap:
@@ -108,7 +107,6 @@ async function swapPercentageOfTokens(
 📥 Input Token: ${inputMint}
 📤 Output Token: ${outputMint}
 🎯 Slippage: ${slippageBps} bps
-💸 Priority Fee: ${priorityFee} SOL
   `);
 
   // Early validation to prevent unnecessary processing
@@ -153,7 +151,10 @@ async function swapPercentageOfTokens(
       taxedTokenProgramID = TOKEN_PROGRAM_ID;
     }
 
-    const balance = await checkBalance(taxedWalletTokenAccount.toString());
+    const balance = await checkBalance(
+      taxedWalletTokenAccount.toString(),
+      taxedTokenProgramID
+    );
     console.log(`💰 Current Token Balance:`, balance);
     if (balance === 0) {
       console.log(

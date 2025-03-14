@@ -167,6 +167,18 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
     return signature;
   } catch (error) {
     console.error("❌ [Transfer] Error during transfer:", error);
+    // Check if error message contains insufficient lamports indicator
+    if (error.message && error.message.includes("insufficient lamports")) {
+      console.error(
+        "💰 [Transfer] ERROR: Insufficient SOL balance in distributor wallet to create new token accounts."
+      );
+      console.error(
+        "💡 [Transfer] Each new token account requires ~2.04 SOL for rent exemption."
+      );
+      console.error(
+        "🔄 [Transfer] Please add more SOL to the distributor wallet and try again."
+      );
+    }
     throw error;
   }
 }
@@ -270,7 +282,7 @@ async function batchTransferTokens(recipients, balance) {
   console.log("├─ 📦 Total batches processed:", allSignatures.length);
   console.log("├─ 👥 Total recipients processed:", processedCount);
   console.log(
-    "├─ 📈 Average recipients per batch:",
+    "├─ �� Average recipients per batch:",
     (processedCount / allSignatures.length).toFixed(2)
   );
   console.log("└─ 📜 All transaction signatures:");
