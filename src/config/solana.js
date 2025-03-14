@@ -7,20 +7,24 @@ const {
 } = require("@solana/spl-token");
 const bs58 = require("bs58");
 
-const TAXED_TOKEN_ADDRESS = process.env.TEST_BROC_COIN_ADDRESS;
+const TAXED_TOKEN_ADDRESS = process.env.UPW_COIN_ADDRESS;
 let taxedTokenProgramID = TOKEN_2022_PROGRAM_ID;
 
 const REWARDS_TOKEN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
 let rewardsTokenProgramID = TOKEN_PROGRAM_ID;
 
 const DISTRIBUTOR_WALLET_PRIVATE_KEY =
-  process.env.TEST_DISTRIBUTOR_WALLET_PRIVATE_KEY;
+  process.env.UPW_DISTRIBUTOR_WALLET_PRIVATE_KEY;
+
 const WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY =
-  process.env.TEST_WITHDRAW_AUTHORITY_PRIVATE_KEY;
-const TEST_DISTRIBUTOR_TAXED_TOKEN_ACCOUNT =
-  process.env.TEST_DISTRIBUTOR_WALLET_BROCC_TOKEN_ACCOUNT;
-const TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT =
-  process.env.TEST_DISTRIBUTOR_WALLET_PWEASE_TOKEN_ACCOUNT;
+  process.env.UPW_WITHDRAW_AUTHORITY_PRIVATE_KEY;
+
+const DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT =
+  process.env.UPW_DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT;
+
+const DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT =
+  process.env.UPW_DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT;
+
 const decimals = 6;
 const taxedTokenSupply = 1000000000;
 const minAmountOfHoldingsForRewards = 100000;
@@ -35,10 +39,7 @@ console.log(
   "[Solana Config] 🔐 WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY:",
   WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY
 );
-console.log(
-  "[Solana Config] 💰 TEST_DISTRIBUTOR_TAXED_TOKEN_ACCOUNT:",
-  TEST_DISTRIBUTOR_TAXED_TOKEN_ACCOUNT
-);
+console.log("[Solana Config] 💰 DIST:", DIST);
 console.log(
   "[Solana Config] 💎 TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT:",
   TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT
@@ -159,13 +160,11 @@ try {
 // Token mint
 let distributorWalletTaxedTokenAccount;
 try {
-  if (!TEST_DISTRIBUTOR_TAXED_TOKEN_ACCOUNT) {
-    throw new Error(
-      "[Solana Config] 💰 TEST_DISTRIBUTOR_TAXED_TOKEN_ACCOUNT is not set in .env file"
-    );
+  if (!DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT) {
+    throw new Error("[Solana Config] 💰 DIST is not set in .env file");
   }
   distributorWalletTaxedTokenAccount = new PublicKey(
-    TEST_DISTRIBUTOR_TAXED_TOKEN_ACCOUNT
+    DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT
   );
   console.log(
     "[Solana Config] 💰 Taxed Token mint initialized:",
@@ -182,13 +181,13 @@ try {
 // Token mint
 let distributorWalletRewardsTokenAccount;
 try {
-  if (!TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT) {
+  if (!DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT) {
     throw new Error(
-      "[Solana Config] 💎 TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT is not set in .env file"
+      "[Solana Config] 💎 DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT is not set in .env file"
     );
   }
   distributorWalletRewardsTokenAccount = new PublicKey(
-    TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT
+    DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT
   );
   console.log(
     "[Solana Config] 💎 Rewards Token mint initialized:",
