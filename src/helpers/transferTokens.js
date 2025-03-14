@@ -1,21 +1,13 @@
 const {
   PublicKey,
-  Keypair,
   Transaction,
-  SystemProgram,
   sendAndConfirmTransaction,
-  LAMPORTS_PER_SOL,
   getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
-  getLatestBlockhash,
 } = require("@solana/web3.js");
 const {
   connection,
   distributorWallet,
   tokenMint,
-  DECIMALS,
-  DISTRIBUTING_REWARDS_TOKEN_ACCOUNT,
-  MAX_TRANSACTION_SIZE,
 } = require("../config/solana");
 const {
   createTransferInstruction,
@@ -36,59 +28,72 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
     let totalrewardAmount = 0;
 
     let balanceTracker = Number(balance);
-    console.log("[Transfer] Initial balance available:", balanceTracker);
+    console.log("💼 [Transfer] Initial balance available:", balanceTracker);
 
     // Get the distributor's token account
-    const fromTokenAccount = new PublicKey(DISTRIBUTING_REWARDS_TOKEN_ACCOUNT);
+    const fromTokenAccount = distributorWalletRewardsTokenAccount;
     console.log(
-      "[Transfer] Distributor token account:",
+      "🏦 [Transfer] Distributor token account:",
       fromTokenAccount.toString()
     );
 
     // Add transfer instructions for each recipient
     for (const recipientAddress in recipients) {
-      console.log("\n[Transfer] Processing recipient:", recipientAddress);
+      console.log("\n👤 [Transfer] Processing recipient:", recipientAddress);
 
       const rewardAmount = recipients[recipientAddress].reward;
-      console.log("[Transfer] Attempting to send amount:", rewardAmount);
+      console.log("💸 [Transfer] Attempting to send amount:", rewardAmount);
 
       if (rewardAmount > balanceTracker) {
-        console.log("[Transfer] ⚠️ Insufficient balance for recipient");
+        console.log("⚠️ [Transfer] Insufficient balance for recipient");
         continue;
       }
       if (rewardAmount < 1) {
-        console.log("[Transfer] ⚠️ Reward amount too small");
+        console.log("⚠️ [Transfer] Reward amount too small");
         continue;
       }
 
       balanceTracker -= rewardAmount;
       console.log(
-        "[Transfer] Remaining balance after transfer:",
+        "💰 [Transfer] Remaining balance after transfer:",
         balanceTracker
       );
 
       // Get the recipient's associated token account
       const recipientPublicKey = new PublicKey(recipientAddress);
+      console.log("🔑 [Transfer] Recipient public key:", recipientPublicKey);
+      console.log("🪙 [Transfer] Token mint:", tokenMint);
       const toTokenAccount = await getAssociatedTokenAddress(
         tokenMint,
         recipientPublicKey
       );
       console.log(
-        "[Transfer] Recipient token account:",
+        "📬 [Transfer] Recipient token account:",
         toTokenAccount.toString()
       );
 
       // Check if the token account exists
       try {
         await getAccount(connection, toTokenAccount);
-        console.log("[Transfer] ✓ Recipient token account exists");
+        console.log("✨ [Transfer] Recipient token account exists");
       } catch (error) {
         if (
           error.message === "TokenAccountNotFoundError" ||
           error.message.includes("Account does not exist")
         ) {
-          console.log("[Transfer] Creating token account for recipient...");
+          console.log("🛠️ [Transfer] Creating token account for recipient...");
           // Create ATA instruction
+          console.log("📝 [Transfer] Creating ATA instruction...");
+          console.log(
+            "👨‍💼 [Transfer] Distributor public key:",
+            distributorWallet.publicKey
+          );
+          console.log(
+            "👥 [Transfer] Recipient public key:",
+            recipientPublicKey
+          );
+          console.log("💎 [Transfer] Token mint:", tokenMint);
+
           const createAtaInstruction = createAssociatedTokenAccountInstruction(
             distributorWallet.publicKey, // payer
             toTokenAccount, // ata
@@ -96,7 +101,7 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
             tokenMint // mint
           );
           transaction.add(createAtaInstruction);
-          console.log("[Transfer] ✓ ATA creation instruction added");
+          console.log("✅ [Transfer] ATA creation instruction added");
         } else {
           throw error;
         }
@@ -109,10 +114,10 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
         distributorWallet.publicKey,
         rewardAmount
       );
-      console.log("[Transfer] ✓ Transfer instruction created");
+      console.log("📋 [Transfer] Transfer instruction created");
 
       transaction.add(transferInstruction);
-      console.log("[Transfer] ✓ Instruction added to transaction");
+      console.log("➕ [Transfer] Instruction added to transaction");
 
       totalrewardAmount += rewardAmount;
     }
@@ -121,27 +126,27 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
     ).blockhash;
-    console.log("[Transfer] ✓ Recent blockhash set");
+    console.log("🔒 [Transfer] Recent blockhash set");
 
     transaction.feePayer = distributorWallet.publicKey;
-    console.log("[Transfer] ✓ Fee payer set");
+    console.log("💳 [Transfer] Fee payer set");
 
     // Send and confirm the transaction
     const signature = await sendAndConfirmTransaction(connection, transaction, [
       distributorWallet,
     ]);
 
-    console.log("\n[Transfer] 🎉 Transaction successful!");
-    console.log("[Transfer] Signature:", signature);
-    console.log("[Transfer] Total tokens sent:", totalrewardAmount);
+    console.log("\n🌟 [Transfer] Transaction successful!");
+    console.log("📜 [Transfer] Signature:", signature);
+    console.log("💫 [Transfer] Total tokens sent:", totalrewardAmount);
     console.log(
-      "[Transfer] Number of recipients:",
+      "👥 [Transfer] Number of recipients:",
       Object.keys(recipients).length
     );
 
     return signature;
   } catch (error) {
-    console.error("[Transfer] ❌ Error during transfer:", error);
+    console.error("❌ [Transfer] Error during transfer:", error);
     throw error;
   }
 }
@@ -174,8 +179,12 @@ async function batchTransferTokens(recipients, balance) {
 
     // Try adding recipients to the current batch until we hit the instruction limit
     for (const [address, details] of Object.entries(remainingRecipients)) {
+      console.log("👤 Processing recipient:", address);
+      console.log("📋 Details:", details);
+      console.log("🔢 Instruction count:", instructionCount);
+      console.log("⚖️ MAX INSTRUCTIONS PER BATCH:", MAX_INSTRUCTIONS_PER_BATCH);
       if (instructionCount >= MAX_INSTRUCTIONS_PER_BATCH) {
-        console.log("⚠️  Batch instruction limit reached");
+        console.log("⚠️ Batch instruction limit reached");
         break;
       }
 
@@ -188,14 +197,17 @@ async function batchTransferTokens(recipients, balance) {
 
     const batchSize = Object.keys(currentBatch).length;
     console.log("\n📤 Processing current batch:");
-    console.log("├─ Recipients in batch:", batchSize);
-    console.log("├─ Total processed so far:", processedCount);
+    console.log("├─ 📊 Recipients in batch:", batchSize);
+    console.log("├─ 📈 Total processed so far:", processedCount);
     console.log(
-      "└─ Remaining after this batch:",
+      "└─ 📉 Remaining after this batch:",
       Object.keys(remainingRecipients).length
     );
 
     try {
+      console.log("🔄 Transferring tokens to multiple addresses...");
+      console.log("📦 Current batch:", currentBatch);
+      console.log("💰 Balance:", balance);
       const signature = await transferTokensToMultipleAddresses(
         currentBatch,
         balance
@@ -204,13 +216,13 @@ async function batchTransferTokens(recipients, balance) {
         allSignatures.push(signature);
         processedCount += batchSize;
         console.log("\n✅ Batch completed successfully");
-        console.log("├─ Signature:", signature);
+        console.log("├─ 📝 Signature:", signature);
         console.log(
-          "├─ Progress:",
+          "├─ 📊 Progress:",
           `${processedCount}/${Object.keys(recipients).length}`
         );
         console.log(
-          "└─ Completion:",
+          "└─ 📈 Completion:",
           `${((processedCount / Object.keys(recipients).length) * 100).toFixed(
             2
           )}%`
@@ -218,9 +230,9 @@ async function batchTransferTokens(recipients, balance) {
       }
     } catch (error) {
       console.error("\n❌ Batch Transfer Error:");
-      console.error("├─ Batch number:", batchNumber);
-      console.error("├─ Recipients in failed batch:", batchSize);
-      console.error("└─ Error:", error.message);
+      console.error("├─ 🔢 Batch number:", batchNumber);
+      console.error("├─ 👥 Recipients in failed batch:", batchSize);
+      console.error("└─ ⚠️ Error:", error.message);
       throw error;
     }
 
@@ -233,15 +245,15 @@ async function batchTransferTokens(recipients, balance) {
   console.log("\n=== 🎉 BATCH TRANSFER SUMMARY ===");
   console.log("✅ Status: All batches completed successfully");
   console.log("📊 Total statistics:");
-  console.log("├─ Total batches processed:", allSignatures.length);
-  console.log("├─ Total recipients processed:", processedCount);
+  console.log("├─ 📦 Total batches processed:", allSignatures.length);
+  console.log("├─ 👥 Total recipients processed:", processedCount);
   console.log(
-    "├─ Average recipients per batch:",
+    "├─ 📈 Average recipients per batch:",
     (processedCount / allSignatures.length).toFixed(2)
   );
-  console.log("└─ All transaction signatures:");
+  console.log("└─ 📜 All transaction signatures:");
   allSignatures.forEach((sig, index) => {
-    console.log(`   ├─ Batch ${index + 1}: ${sig}`);
+    console.log(`   ├─ 🔖 Batch ${index + 1}: ${sig}`);
   });
   console.log("===============================");
 
