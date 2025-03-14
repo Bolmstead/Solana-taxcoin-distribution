@@ -7,6 +7,7 @@ const {
 } = require("@solana/web3.js");
 const {
   TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
   getAccount,
   getAssociatedTokenAddress,
   getMint,
@@ -19,6 +20,10 @@ const { getSignature } = require("./utils/getSignature.js");
 const dotenv = require("dotenv");
 const { checkBalance } = require("../helpers/checkBalance.js");
 const { connection } = require("../config/solana.js");
+let {
+  taxedTokenProgramID,
+  rewardsTokenProgramID,
+} = require("../config/solana");
 
 dotenv.config();
 
@@ -137,26 +142,31 @@ async function swapPercentageOfTokens(
         "EFub3rZdfMxZaehBKzVkkvgx7fRjK87TBmtG7DfF763T"
       );
       console.log(
-        "🔍 TEST ACTIVE!! taxedWalletTokenAccount:: ",
+        "🚨🚨🚨🚨🚨🚨🚨 TEST ACTIVE!! taxedWalletTokenAccount:: ",
         taxedWalletTokenAccount
       );
       // WCS TOKEN MINT
       inputMint = new PublicKey("Grxe7CuqVBURzotjuyjVmdwif96ifvzJNrFmYq6cmJj9");
-      console.log("🔍 TEST ACTIVE!! inputMint:: ", inputMint);
+      console.log("🚨🚨🚨🚨🚨🚨🚨 TEST ACTIVE!! inputMint:: ", inputMint);
+
+      // WCS TOKEN PROGRAM
+      taxedTokenProgramID = TOKEN_PROGRAM_ID;
     }
 
     const balance = await checkBalance(taxedWalletTokenAccount.toString());
     console.log(`💰 Current Token Balance:`, balance);
     if (balance === 0) {
-      throw new Error(
+      console.log(
         `❌ No Balance Found for ${taxedWalletTokenAccount.toString()}`
       );
+      return null;
     }
     const amountToSwap = Math.floor((balance * percentageToSwap) / 100);
     console.log("👜 amountToSwap:: ", amountToSwap);
     // Get quote and prepare swap
     if (balance === "error") {
-      throw new Error("❌ Error checking balance");
+      console.log("❌ Error checking balance");
+      return null;
     }
     const quote = await getQuote(
       inputMint.toString(),

@@ -1,4 +1,8 @@
-const { TOKEN_PROGRAM_ID, getAccount } = require("@solana/spl-token");
+const {
+  TOKEN_PROGRAM_ID,
+  getAccount,
+  TOKEN_2022_PROGRAM_ID,
+} = require("@solana/spl-token");
 const { PublicKey } = require("@solana/web3.js");
 const axios = require("axios");
 const {
@@ -14,6 +18,8 @@ const {
   taxedTokenSupply,
   distributorWalletTaxedTokenAccount,
   minAmountOfHoldingsForRewards,
+  taxedTokenProgramID,
+  rewardsTokenProgramID,
 } = require("../config/solana");
 
 const { LAMPORTS_PER_SOL, Keypair } = require("@solana/web3.js");
@@ -62,7 +68,7 @@ async function getTokenHolders(
     if (response.data.result) {
       const accounts = response.data.result.token_accounts;
       console.log(
-        `📋 [Token Holders] Found ${accounts.length} token accounts on page ${page}`
+        `📋 [Token Holders] Found ${accounts.length} holders on page ${page}`
       );
 
       if (accounts.length < 100) {
@@ -76,15 +82,10 @@ async function getTokenHolders(
         }
         if (account.amount > minAmountOfHoldings) {
           const percentage = account.amount / totalSupply;
-          console.log(
-            "📈 [Token Holders] Account percentage:",
-            `%${(percentage * 100).toFixed(6)}`
-          );
           if (percentage < 0.000001) {
             continue;
           }
           const tokenRewards = Math.floor(totalRewardsBalance * percentage);
-          console.log("🎁 [Token Holders] Calculated rewards:", tokenRewards);
           currentAccounts[account.owner] = {
             currentHoldings: account.amount / 10 ** decimals,
             reward: tokenRewards,
@@ -110,9 +111,10 @@ async function getTokenHolders(
 
 const getAllTokenHolders = async (mintString, totalRewardsBalance) => {
   console.log(
-    "🎯 [Token Holders] Starting token holder analysis with total rewards:",
-    totalRewardsBalance
+    "🎯 [Token Holders] Starting token holder analysis for token:",
+    mintString
   );
+  console.log("🎯 [Token Holders] Total rewards:", totalRewardsBalance);
   let justKeepGoing = true;
   let page = 1;
   let accounts = {};
@@ -140,14 +142,7 @@ const getAllTokenHolders = async (mintString, totalRewardsBalance) => {
 
   console.log("\n📊 [Token Holders] Final Distribution Summary:");
   for (const account of Object.keys(accounts)) {
-    console.log("👤 [Token Holders] Account:", account);
-    console.log("📈 [Token Holders] Distribution:", accounts[account]);
-    console.log("🎁 [Token Holders] Reward amount:", accounts[account].reward);
     totalPercentage += accounts[account].percentage;
-    console.log(
-      "📊 [Token Holders] Running total percentage:",
-      `%${(totalPercentage * 100).toFixed(6)}`
-    );
   }
   return accounts;
 };
@@ -162,7 +157,6 @@ if (require.main === module) {
   const execute = async () => {
     try {
       const isTest = true;
-      console.log("🚀 [Main] Starting token distribution process...");
 
       const taxWithdrawalResult = await executeTaxWithdrawal(
         distributorWalletTaxedTokenAccount
@@ -177,9 +171,11 @@ if (require.main === module) {
         console.error("❌ [Main] Tax withdrawal failed");
       }
 
+      let percentageToSwap = 100;
+
       const swapResult = await swapPercentageOfTokens(
         isTest,
-        100,
+        percentageToSwap,
         distributorWallet,
         distributorWalletTaxedTokenAccount,
         taxedTokenMintAddress,
@@ -207,7 +203,6 @@ if (require.main === module) {
           : taxedTokenMintAddress.toString(),
         totalTokenRewards
       );
-      console.log("👥 [Main] Token holders distribution:", holders);
       const allSignatures = await batchTransferTokens(
         holders,
         totalTokenRewards

@@ -2,17 +2,22 @@ const {
   PublicKey,
   Transaction,
   sendAndConfirmTransaction,
-  getAssociatedTokenAddress,
 } = require("@solana/web3.js");
 const {
   connection,
   distributorWallet,
-  tokenMint,
+  rewardsTokenMintAddress,
+  distributorWalletRewardsTokenAccount,
+  rewardsTokenProgramID,
 } = require("../config/solana");
 const {
   createTransferInstruction,
   getAccount,
   createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
 } = require("@solana/spl-token");
 const bs58 = require("bs58");
 
@@ -61,56 +66,65 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
 
       // Get the recipient's associated token account
       const recipientPublicKey = new PublicKey(recipientAddress);
-      console.log("🔑 [Transfer] Recipient public key:", recipientPublicKey);
-      console.log("🪙 [Transfer] Token mint:", tokenMint);
-      const toTokenAccount = await getAssociatedTokenAddress(
-        tokenMint,
-        recipientPublicKey
+      console.log(
+        "🔑 [Transfer] Recipient public key:",
+        recipientPublicKey.toString()
       );
       console.log(
-        "📬 [Transfer] Recipient token account:",
-        toTokenAccount.toString()
+        "\n📝 [Transfer] Getting associated token address with params:"
+      );
+      console.log("├─ 🏦 Mint Address:", rewardsTokenMintAddress.toString());
+      console.log("├─ 👤 Recipient Public Key:", recipientPublicKey.toString());
+      console.log("├─ 🔄 Allow Owner Off Curve:", true);
+      console.log("├─ 🔑 Token Program ID:", rewardsTokenProgramID.toString());
+      console.log(
+        "└─ 🔗 Associated Token Program ID:",
+        ASSOCIATED_TOKEN_PROGRAM_ID.toString()
+      );
+
+      const associatedTokenAddress = await getAssociatedTokenAddress(
+        rewardsTokenMintAddress,
+        recipientPublicKey,
+        true,
+        rewardsTokenProgramID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+      console.log(
+        "🚀 ~ transferTokensToMultipleAddresses ~ associatedTokenAddress:",
+        associatedTokenAddress
       );
 
       // Check if the token account exists
+      let accountInfo;
       try {
-        await getAccount(connection, toTokenAccount);
+        accountInfo = await connection.getAccountInfo(associatedTokenAddress);
+        if (accountInfo === null) {
+          throw new Error("Account does not exist");
+        }
         console.log("✨ [Transfer] Recipient token account exists");
       } catch (error) {
-        if (
-          error.message === "TokenAccountNotFoundError" ||
-          error.message.includes("Account does not exist")
-        ) {
-          console.log("🛠️ [Transfer] Creating token account for recipient...");
-          // Create ATA instruction
-          console.log("📝 [Transfer] Creating ATA instruction...");
-          console.log(
-            "👨‍💼 [Transfer] Distributor public key:",
-            distributorWallet.publicKey
-          );
-          console.log(
-            "👥 [Transfer] Recipient public key:",
-            recipientPublicKey
-          );
-          console.log("💎 [Transfer] Token mint:", tokenMint);
+        console.log("🛠️ [Transfer] Creating token account for recipient...");
+        // Create ATA instruction
+        console.log("📝 [Transfer] Creating ATA instruction...");
+        console.log(
+          "👨‍💼 [Transfer] Distributor public key:",
+          distributorWallet.publicKey.toString()
+        );
 
-          const createAtaInstruction = createAssociatedTokenAccountInstruction(
-            distributorWallet.publicKey, // payer
-            toTokenAccount, // ata
-            recipientPublicKey, // owner
-            tokenMint // mint
-          );
-          transaction.add(createAtaInstruction);
-          console.log("✅ [Transfer] ATA creation instruction added");
-        } else {
-          throw error;
-        }
+        const createAtaInstruction = createAssociatedTokenAccountInstruction(
+          distributorWallet.publicKey, // payer
+          associatedTokenAddress, // ata
+          recipientPublicKey, // owner
+          rewardsTokenMintAddress // mint
+        );
+        transaction.add(createAtaInstruction);
+        console.log("✅ [Transfer] ATA creation instruction added");
       }
 
       // Create transfer instruction
       const transferInstruction = createTransferInstruction(
         fromTokenAccount,
-        toTokenAccount,
+        associatedTokenAddress,
         distributorWallet.publicKey,
         rewardAmount
       );
@@ -120,6 +134,12 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
       console.log("➕ [Transfer] Instruction added to transaction");
 
       totalrewardAmount += rewardAmount;
+    }
+
+    // If no instructions were added, no need to proceed
+    if (transaction.instructions.length === 0) {
+      console.log("ℹ️ [Transfer] No valid transfers to process");
+      return null;
     }
 
     // Set a recent blockhash for the transaction
@@ -175,7 +195,7 @@ async function batchTransferTokens(recipients, balance) {
 
     currentBatch = {};
     let instructionCount = 0;
-    const MAX_INSTRUCTIONS_PER_BATCH = 20; // Conservative limit to ensure we stay under size limit
+    const MAX_INSTRUCTIONS_PER_BATCH = 10; // Conservative limit to ensure we stay under size limit
 
     // Try adding recipients to the current batch until we hit the instruction limit
     for (const [address, details] of Object.entries(remainingRecipients)) {
@@ -242,6 +262,8 @@ async function batchTransferTokens(recipients, balance) {
     batchNumber++;
   }
 
+  console.log("🫣 All signatures:", allSignatures);
+
   console.log("\n=== 🎉 BATCH TRANSFER SUMMARY ===");
   console.log("✅ Status: All batches completed successfully");
   console.log("📊 Total statistics:");
@@ -260,39 +282,64 @@ async function batchTransferTokens(recipients, balance) {
   return allSignatures;
 }
 
-// Example usage:
-// async function main() {
-//   // Replace these values with your actual wallet details
-
-//   // Example of multiple recipients
-//   const recipients = {
-//     [process.env.BURNER_WALLET_PUBLIC_KEY]: {
-//       reward: 123,
-//       tokenAccount: process.env.BURNER_WALLET_JUP_TOKEN_ACCOUNT,
-//     },
-//     [process.env.DEGEN_WALLET_PUBLIC_KEY]: {
-//       reward: 321,
-//       tokenAccount: process.env.DEGEN_WALLET_JUP_TOKEN_ACCOUNT,
-//     },
-//   };
-
-//   try {
-//     const signature = await transferTokensToMultipleAddresses(
-//       process.env.JUP_TOKEN_ADDRESS,
-//       recipients
-//     );
-//     console.log(
-//       `Transaction link: https://explorer.solana.com/tx/${signature}`
-//     );
-
-//     // Example of single recipient transfer using the multi-recipient function
-//     // const singleRecipientSignature = await transferSOL(fromPrivateKey, 'ACqmGpAW5B6Ev8NgieiL8KBFQvLs9fWpAQsAiKbmS8Ha', 0.1);
-//     // console.log(`Single transaction link: https://explorer.solana.com/tx/${singleRecipientSignature}?cluster=devnet`);
-//   } catch (error) {
-//     console.error("Transfer failed:", error);
-//   }
-// }
-
-// Run the example
-
 module.exports = { transferTokensToMultipleAddresses, batchTransferTokens };
+
+// Example usage when run directly
+if (require.main === module) {
+  const execute = async () => {
+    try {
+      console.log("\n=== 🧪 TEST TRANSFER EXECUTION ===");
+
+      // Example recipients with test data
+      const testRecipients = {
+        HnC8ETqqR6cC6FGnBE5ANdajAss9WYFLFMC2RxnXxeUZ: {
+          currentHoldings: 15293.927308,
+          reward: 62,
+          percentage: 0.000015293927308,
+        },
+
+        "92vZwgTSqtqSJqVwUqaCUFM5JRwaxBAvHbcEUnoXm8EB": {
+          currentHoldings: 92709.696389,
+          reward: 378,
+          percentage: 0.000092709696389,
+        },
+      };
+
+      // Test balance - this would normally come from checking actual balance
+      const testBalance = 10000;
+
+      // Test single transfer
+      console.log("\n📝 Testing single transfer...");
+      // try {
+      //   const singleTransferResult = await transferTokensToMultipleAddresses(
+      //     {
+      //       [Object.keys(testRecipients)[0]]:
+      //         testRecipients[Object.keys(testRecipients)[0]],
+      //     },
+      //     testBalance
+      //   );
+      //   console.log("✅ Single transfer test result:", singleTransferResult);
+      // } catch (error) {
+      //   console.error("❌ Single transfer test failed:", error.message);
+      // }
+
+      // Test batch transfer
+      console.log("\n📦 Testing batch transfer...");
+      try {
+        const batchTransferResult = await batchTransferTokens(
+          testRecipients,
+          testBalance
+        );
+        console.log("✅ Batch transfer test result:", batchTransferResult);
+      } catch (error) {
+        console.error("❌ Batch transfer test failed:", error.message);
+      }
+
+      console.log("\n=== 🎉 TEST EXECUTION COMPLETE ===");
+    } catch (error) {
+      console.error("❌ Test execution error:", error);
+    }
+  };
+
+  execute().catch(console.error);
+}

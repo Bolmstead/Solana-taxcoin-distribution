@@ -1,6 +1,5 @@
 const { Keypair, clusterApiUrl } = require("@solana/web3.js");
 const {
-  TOKEN_2022_PROGRAM_ID,
   getTransferFeeAmount,
   unpackAccount,
   withdrawWithheldTokensFromAccounts,
@@ -11,6 +10,8 @@ const {
   distributorWallet,
   taxedTokenMintAddress,
   withdrawAuthorityWallet,
+  taxedTokenProgramID,
+  rewardsTokenProgramID,
 } = require("../config/solana.js");
 const dotenv = require("dotenv");
 const bs58 = require("bs58").default;
@@ -49,20 +50,17 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
   }
 
   console.log("🔍 Fetching all token accounts...");
-  const allAccounts = await connection.getProgramAccounts(
-    TOKEN_2022_PROGRAM_ID,
-    {
-      commitment: "confirmed",
-      filters: [
-        {
-          memcmp: {
-            offset: 0,
-            bytes: taxedTokenMintAddress.toString(),
-          },
+  const allAccounts = await connection.getProgramAccounts(taxedTokenProgramID, {
+    commitment: "confirmed",
+    filters: [
+      {
+        memcmp: {
+          offset: 0,
+          bytes: taxedTokenMintAddress.toString(),
         },
-      ],
-    }
-  );
+      },
+    ],
+  });
   console.log("📊 Total accounts found:", allAccounts.length);
 
   const accountsToWithdrawFrom = [];
@@ -73,7 +71,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
       const account = unpackAccount(
         accountInfo.pubkey,
         accountInfo.account,
-        TOKEN_2022_PROGRAM_ID
+        taxedTokenProgramID
       );
 
       // We then extract the transfer fee extension data from the account
@@ -139,7 +137,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
       withdrawWithheldAuthority,
       [],
       undefined,
-      TOKEN_2022_PROGRAM_ID
+      taxedTokenProgramID
     );
 
     console.log(
@@ -158,7 +156,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
       [],
       accountsToWithdrawFrom,
       undefined,
-      TOKEN_2022_PROGRAM_ID
+      taxedTokenProgramID
     );
 
     console.log(
@@ -191,7 +189,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
   //   withdrawWithheldAuthority, // the withdraw withheld authority
   //   [], // signing accounts
   //   undefined, // options for confirming the transaction
-  //   TOKEN_2022_PROGRAM_ID // SPL token program id
+  //   taxedTokenProgramID // SPL token program id
   // );
 }
 

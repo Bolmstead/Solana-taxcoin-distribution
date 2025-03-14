@@ -1,10 +1,18 @@
 require("dotenv").config();
 const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
-const { getAssociatedTokenAddress } = require("@solana/spl-token");
+const {
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+} = require("@solana/spl-token");
 const bs58 = require("bs58");
 
 const TAXED_TOKEN_ADDRESS = process.env.TEST_BROC_COIN_ADDRESS;
+let taxedTokenProgramID = TOKEN_2022_PROGRAM_ID;
+
 const REWARDS_TOKEN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
+let rewardsTokenProgramID = TOKEN_PROGRAM_ID;
+
 const DISTRIBUTOR_WALLET_PRIVATE_KEY =
   process.env.TEST_DISTRIBUTOR_WALLET_PRIVATE_KEY;
 const WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY =
@@ -206,4 +214,6 @@ module.exports = {
   distributorWalletRewardsTokenAccount,
   withdrawAuthorityWallet,
   minAmountOfHoldingsForRewards,
+  taxedTokenProgramID,
+  rewardsTokenProgramID,
 };

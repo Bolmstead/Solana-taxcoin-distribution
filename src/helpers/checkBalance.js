@@ -44,6 +44,8 @@ async function checkBalance(accountPublicKey) {
       "confirmed",
       TOKEN_2022_PROGRAM_ID
     );
+    console.error("✅ 2022 Token Program worked!");
+
     console.log("📊 Token Account Info:", tokenAccountInfo);
 
     const balance = Number(tokenAccountInfo.amount);
@@ -54,15 +56,13 @@ async function checkBalance(accountPublicKey) {
     if (error.name === "TokenInvalidAccountOwnerError") {
       try {
         console.error(
-          "❌ Token account exists but is not owned by the expected owner"
-        );
-        console.error(
           "❌ Token Program didn't work. Trying original token program"
         );
         const tokenAccountInfo = await getAccount(
           connection,
           tokenAccountPublicKey
         );
+        console.error("✅ Old Token Program worked!");
         const balance = Number(tokenAccountInfo.amount);
         console.log("💎 Current Balance:", balance);
         return balance;
