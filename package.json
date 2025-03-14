@@ -5,9 +5,9 @@
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
-    "execute": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "execute": "node src/helpers/tokenHolders.js",
     "holders": "node src/helpers/tokenHolders.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "distribute": "node src/helpers/tokenDistribution.js",
     "checkBalance": "node src/helpers/checkBalance.js",
     "transfer": "node src/helpers/transferTokens.js",
