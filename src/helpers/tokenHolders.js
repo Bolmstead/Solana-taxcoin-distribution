@@ -18,7 +18,7 @@ const {
 const { LAMPORTS_PER_SOL, Keypair } = require("@solana/web3.js");
 const { batchTransferTokens } = require("./transferTokens");
 const { checkBalance } = require("./checkBalance");
-const { swapAllTokens } = require("../jupiter");
+const { swapPercentageOfTokens } = require("../jupiter");
 require("dotenv").config();
 const { executeTaxWithdrawal } = require("./executeWithdrawal");
 const { initializeTokenAccounts } = require("./initializeTokenAccounts");
@@ -162,30 +162,10 @@ if (require.main === module) {
     try {
       console.log("🚀 [Main] Starting token distribution process...");
 
-      // const {
-      //   distributorWalletTaxedTokenAccount,
-      //   distributorWalletRewardsTokenAccount,
-      // } = await initializeTokenAccounts();
-
-      // console.log(
-      //   "💼 [Main] Distributor wallet accounts initialized:",
-      //   "\n  Taxed Token Account:",
-      //   distributorWalletTaxedTokenAccount,
-      //   "\n  Rewards Token Account:",
-      //   distributorWalletRewardsTokenAccount
-      // );
-
-      const testWithdrawDemoResult = await executeTaxWithdrawal(
+      const taxWithdrawalResult = await executeTaxWithdrawal(
         distributorWalletTaxedTokenAccount
       );
-      console.log(
-        "📝 [Main] Test withdrawal demo result:",
-        testWithdrawDemoResult
-      );
-      return;
-
-      const taxWithdrawalResult = await distributorWalletTaxedTokenAccount;
-      console.log("💸 [Main] Tax withdrawal result:", taxWithdrawalResult);
+      console.log("📝 [Main] Tax withdrawal result:", taxWithdrawalResult);
 
       if (!taxWithdrawalResult.signature) {
         console.error("❌ [Main] Tax withdrawal failed");
@@ -194,11 +174,12 @@ if (require.main === module) {
         console.log("✅ [Main] Tax withdrawal successful!");
       }
 
-      const swapResult = await swapAllTokens(
+      const swapResult = await swapPercentageOfTokens(
+        50,
         distributorWallet,
-        TAXED_WALLET_TOKEN_ACCOUNT,
-        TAXED_TOKEN_ADDRESS,
-        TARGET_MEME_COIN_ADDRESS,
+        distributorWalletTaxedTokenAccount,
+        taxedTokenMintAddress,
+        rewardsTokenMintAddress,
         (slippageBps = 2000),
         (priorityFee = 0.05)
       );
@@ -215,7 +196,7 @@ if (require.main === module) {
         console.error("❌ [Main] Error swapping tokens:", swapResult.error);
         return;
       }
-
+      return;
       const holders = await getAllTokenHolders(totalTokenRewards);
       console.log("👥 [Main] Token holders distribution:", holders);
 

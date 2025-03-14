@@ -164,6 +164,9 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
       "💼 Account withdrawal successful! Check transaction:",
       `\n🔗 https://solana.fm/tx/${withdrawTokensSig}?cluster=devnet-solana`
     );
+    return {
+      signature: withdrawTokensSig,
+    };
   } catch (error) {
     console.error("❌ Withdrawal failed:", error.message);
     if (error.logs) {

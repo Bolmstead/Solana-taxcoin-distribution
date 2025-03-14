@@ -27,6 +27,7 @@ dotenv.config();
 // Make sure that you are using your own RPC endpoint.
 // Helius and Triton have staked SOL and they can usually land transactions better.
 
+console.log("🔌 Initializing Jupiter API client...");
 const jupiterAPI = createJupiterApiClient();
 
 // --------- config ---------
@@ -76,7 +77,8 @@ async function getSwapResponse(wallet, quote) {
   return swapResponse;
 }
 
-async function swapAllTokens(
+async function swapPercentageOfTokens(
+  percentageToSwap,
   walletKeypair,
   taxedWalletTokenAccount,
   inputMint,
@@ -86,7 +88,8 @@ async function swapAllTokens(
 ) {
   console.log(`
 🔄 Initiating Token Swap:
-👛 Wallet: ${walletKeypair.publicKey.toString()}
+👛 Wallet.publicKey.toString(): ${walletKeypair.publicKey.toString()}
+💰 Percentage to Swap: ${percentageToSwap}%
 📥 Input Token: ${inputMint}
 📤 Output Token: ${outputMint}
 🎯 Slippage: ${slippageBps} bps
@@ -94,8 +97,15 @@ async function swapAllTokens(
   `);
 
   // Early validation to prevent unnecessary processing
-  if (!outputMint || !inputMint || !walletKeypair) {
-    console.error("❌ Missing required parameters for swapAllTokens");
+  console.log("🔍 Validating input parameters...");
+  if (
+    !outputMint ||
+    !inputMint ||
+    !walletKeypair ||
+    !taxedWalletTokenAccount ||
+    !percentageToSwap
+  ) {
+    console.error("❌ Missing required parameters for swapPercentageOfTokens");
     return null;
   }
   if (slippageBps > 10000) {
@@ -109,17 +119,16 @@ async function swapAllTokens(
       return null;
     }
 
-    const balance = await checkBalance(
-      walletKeypair.publicKey.toString(),
-      taxedWalletTokenAccount
-    );
+    const balance = await checkBalance(taxedWalletTokenAccount.toString());
     console.log(`💰 Current Token Balance:`, balance);
-
+    const amountToSwap = Math.floor((balance * percentageToSwap) / 100);
     // Get quote and prepare swap
+
+    
     const quote = await getQuote(
       inputMint,
       outputMint,
-      balance,
+      amountToSwap,
       slippageBps,
       priorityFee
     );
@@ -139,6 +148,7 @@ async function swapAllTokens(
     const totalTokenRewards = quote.outAmount;
 
     // Prepare transaction (reuse Buffer to avoid extra allocation)
+    console.log("📝 Preparing transaction buffer...");
     const transactionBuffer = Buffer.from(
       swapResponse.swapTransaction,
       "base64"
@@ -148,10 +158,12 @@ async function swapAllTokens(
     );
 
     // Just sign and send
+    console.log("✍️ Signing transaction...");
     transaction.sign([walletKeypair]);
     const signature = getSignature(transaction);
     const serializedTx = transaction.serialize();
 
+    console.log("📡 Sending transaction...");
     const txResponse = await transactionSenderAndConfirmationWaiter({
       connection: connection,
       serializedTransaction: Buffer.from(serializedTx),
@@ -246,6 +258,7 @@ async function sellTokenPercent(
 📊 Percentage to Sell: ${percentToSell}%
   `);
 
+  console.log("🔐 Loading wallet credentials...");
   let wallet = null;
   if (walletName === "Berkley") {
     wallet = Keypair.fromSecretKey(
@@ -260,6 +273,7 @@ async function sellTokenPercent(
   console.log(`👛 Active Wallet: ${wallet.publicKey.toString()}`);
 
   // Convert the input token address to a PublicKey
+  console.log("🔄 Converting token address to PublicKey...");
   const memeTokenPublicKey = new PublicKey(memeTokenAddress);
   console.log(`🔑 Token PublicKey: ${memeTokenPublicKey.toString()}`);
 
@@ -437,6 +451,7 @@ const sellPercentOfTokenToZero = async (
   }
 };
 
+console.log("📦 Preparing module exports...");
 // Export the individual functions for use in other files
 module.exports = {
   getQuote,
@@ -444,5 +459,5 @@ module.exports = {
   getTokenBalance,
   sellTokenPercent,
   sellPercentOfTokenToZero,
-  swapAllTokens,
+  swapPercentageOfTokens,
 };
