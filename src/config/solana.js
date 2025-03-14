@@ -15,6 +15,7 @@ const TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT =
   process.env.TEST_DISTRIBUTOR_WALLET_PWEASE_TOKEN_ACCOUNT;
 const decimals = 6;
 const taxedTokenSupply = 1000000000;
+const minAmountOfHoldingsForRewards = 100000;
 
 console.log("[Solana Config] 🪙 TAXED_TOKEN_ADDRESS:", TAXED_TOKEN_ADDRESS);
 console.log("[Solana Config] 🎁 REWARDS_TOKEN_ADDRESS:", REWARDS_TOKEN_ADDRESS);
@@ -204,4 +205,5 @@ module.exports = {
   distributorWalletTaxedTokenAccount,
   distributorWalletRewardsTokenAccount,
   withdrawAuthorityWallet,
+  minAmountOfHoldingsForRewards,
 };

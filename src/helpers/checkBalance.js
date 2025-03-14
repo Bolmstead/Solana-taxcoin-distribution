@@ -52,15 +52,32 @@ async function checkBalance(accountPublicKey) {
     return balance;
   } catch (error) {
     if (error.name === "TokenInvalidAccountOwnerError") {
-      console.error(
-        "❌ Token account exists but is not owned by the expected owner"
-      );
+      try {
+        console.error(
+          "❌ Token account exists but is not owned by the expected owner"
+        );
+        console.error(
+          "❌ Token Program didn't work. Trying original token program"
+        );
+        const tokenAccountInfo = await getAccount(
+          connection,
+          tokenAccountPublicKey
+        );
+        const balance = Number(tokenAccountInfo.amount);
+        console.log("💎 Current Balance:", balance);
+        return balance;
+      } catch (error) {
+        console.error("❌ Neither token program worked 🤷🏾‍♀️");
+        console.log(error);
+        return "error";
+      }
     } else if (error.name === "TokenAccountNotFoundError") {
       console.error("❌ Token account does not exist");
+      return "error";
     } else {
       console.error("❌ Error checking token balance:", error);
+      return "error";
     }
-    return 0;
   }
 }
 

@@ -106,9 +106,10 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
   }
 
   if (accountsToWithdrawFrom.length === 0) {
-    throw new Error(
-      "❌ No accounts to withdraw from: no transfers have been made"
-    );
+    console.log("❌ No accounts to withdraw from: no transfers have been made");
+    return {
+      status: "No Accounts",
+    };
   } else {
     console.log(
       "✨ Found",
@@ -166,6 +167,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
     );
     return {
       signature: withdrawTokensSig,
+      status: "success",
     };
   } catch (error) {
     console.error("❌ Withdrawal failed:", error.message);

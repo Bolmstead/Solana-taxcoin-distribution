@@ -15,7 +15,8 @@
     "swap": "node src/helpers/swapTokens.js",
     "withdrawTaxes": "node src/helpers/withdrawTaxes.js",
     "solana": "node src/config/solana.js",
-    "testWithdraw": "node src/helpers/testWithdrawDemo.js"
+    "testWithdraw": "node src/helpers/testWithdrawDemo.js",
+    "jupiter": "node src/jupiter/index.js"
   },
   "keywords": [
     "solana",

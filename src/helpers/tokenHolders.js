@@ -13,6 +13,7 @@ const {
   decimals,
   taxedTokenSupply,
   distributorWalletTaxedTokenAccount,
+  minAmountOfHoldingsForRewards,
 } = require("../config/solana");
 
 const { LAMPORTS_PER_SOL, Keypair } = require("@solana/web3.js");
@@ -24,18 +25,16 @@ const { executeTaxWithdrawal } = require("./executeWithdrawal");
 const { initializeTokenAccounts } = require("./initializeTokenAccounts");
 const { testWithdrawDemo } = require("./executeWithdrawal");
 async function getTokenHolders(
+  mintString,
   page,
   currentAccounts,
   totalRewardsBalance,
-  minAmountOfHoldings = 1000
+  minAmountOfHoldings = minAmountOfHoldingsForRewards
 ) {
   try {
     let wasLastPage = false;
 
-    console.log(
-      "🔍 [Token Holders] Fetching accounts for mint:",
-      taxedTokenMintAddress.publicKey
-    );
+    console.log("🔍 [Token Holders] Fetching accounts for mint:", mintString);
 
     const response = await axios.post(
       process.env.HELIUS_RPC_URL,
@@ -44,7 +43,7 @@ async function getTokenHolders(
         id: "my-id",
         method: "getTokenAccounts",
         params: {
-          mint: taxedTokenMintAddress.publicKey,
+          mint: mintString,
           limit: 100,
           page: page,
         },
@@ -87,6 +86,7 @@ async function getTokenHolders(
           const tokenRewards = Math.floor(totalRewardsBalance * percentage);
           console.log("🎁 [Token Holders] Calculated rewards:", tokenRewards);
           currentAccounts[account.owner] = {
+            currentHoldings: account.amount / 10 ** decimals,
             reward: tokenRewards,
             percentage: percentage,
           };
@@ -108,7 +108,7 @@ async function getTokenHolders(
   }
 }
 
-const getAllTokenHolders = async (totalRewardsBalance) => {
+const getAllTokenHolders = async (mintString, totalRewardsBalance) => {
   console.log(
     "🎯 [Token Holders] Starting token holder analysis with total rewards:",
     totalRewardsBalance
@@ -126,6 +126,7 @@ const getAllTokenHolders = async (totalRewardsBalance) => {
   while (justKeepGoing) {
     console.log("🔄 [Token Holders] Processing page:", page);
     const { updatedAccounts, wasLastPage } = await getTokenHolders(
+      mintString,
       page,
       accounts,
       totalRewardsBalance
@@ -160,6 +161,7 @@ module.exports = {
 if (require.main === module) {
   const execute = async () => {
     try {
+      const isTest = true;
       console.log("🚀 [Main] Starting token distribution process...");
 
       const taxWithdrawalResult = await executeTaxWithdrawal(
@@ -167,15 +169,17 @@ if (require.main === module) {
       );
       console.log("📝 [Main] Tax withdrawal result:", taxWithdrawalResult);
 
-      if (!taxWithdrawalResult.signature) {
-        console.error("❌ [Main] Tax withdrawal failed");
-        return;
-      } else {
+      if (taxWithdrawalResult.signature) {
         console.log("✅ [Main] Tax withdrawal successful!");
+      } else if (taxWithdrawalResult.status === "No Accounts") {
+        console.log("🤷‍♀️ [Main] No tax to withdraw. continuing...");
+      } else {
+        console.error("❌ [Main] Tax withdrawal failed");
       }
 
       const swapResult = await swapPercentageOfTokens(
-        50,
+        isTest,
+        100,
         distributorWallet,
         distributorWalletTaxedTokenAccount,
         taxedTokenMintAddress,
@@ -196,10 +200,14 @@ if (require.main === module) {
         console.error("❌ [Main] Error swapping tokens:", swapResult.error);
         return;
       }
-      return;
-      const holders = await getAllTokenHolders(totalTokenRewards);
-      console.log("👥 [Main] Token holders distribution:", holders);
 
+      const holders = await getAllTokenHolders(
+        isTest
+          ? "Grxe7CuqVBURzotjuyjVmdwif96ifvzJNrFmYq6cmJj9"
+          : taxedTokenMintAddress.toString(),
+        totalTokenRewards
+      );
+      console.log("👥 [Main] Token holders distribution:", holders);
       const allSignatures = await batchTransferTokens(
         holders,
         totalTokenRewards

@@ -35,7 +35,8 @@ const jupiterAPI = createJupiterApiClient();
 const DEFAULT_AMOUNT_TO_BUY = null;
 
 async function getQuote(inputMint, outputMint, amount, slippageBps) {
-  console.log(`
+  try {
+    console.log(`
 🔍 Getting Quote:
 📥 Input Token: ${inputMint}
 📤 Output Token: ${outputMint}
@@ -43,18 +44,25 @@ async function getQuote(inputMint, outputMint, amount, slippageBps) {
 🎯 Slippage: ${slippageBps} bps
   `);
 
-  // get quote
-  const quote = await jupiterAPI.quoteGet({
-    inputMint,
-    outputMint,
-    amount,
-    slippageBps,
-  });
-  console.log(`📊 Quote Details:`, JSON.stringify(quote, null, 2));
-  if (!quote) {
-    throw new Error("❌ Unable to get quote");
+    const arguments = {
+      inputMint,
+      outputMint,
+      amount,
+      slippageBps,
+    };
+    console.log("🚀 ~ getQuote ~ arguments:", arguments);
+
+    // get quote
+    const quote = await jupiterAPI.quoteGet(arguments);
+    console.log(`📊 Quote Details:`, JSON.stringify(quote, null, 2));
+    if (!quote) {
+      throw new Error("❌ Unable to get quote");
+    }
+    return quote;
+  } catch (error) {
+    console.error("❌ Error getting quote:", error);
+    return null;
   }
-  return quote;
 }
 
 async function getSwapResponse(wallet, quote) {
@@ -78,6 +86,7 @@ async function getSwapResponse(wallet, quote) {
 }
 
 async function swapPercentageOfTokens(
+  isTest,
   percentageToSwap,
   walletKeypair,
   taxedWalletTokenAccount,
@@ -88,6 +97,7 @@ async function swapPercentageOfTokens(
 ) {
   console.log(`
 🔄 Initiating Token Swap:
+🔍 isTest: ${isTest}
 👛 Wallet.publicKey.toString(): ${walletKeypair.publicKey.toString()}
 💰 Percentage to Swap: ${percentageToSwap}%
 📥 Input Token: ${inputMint}
@@ -119,18 +129,40 @@ async function swapPercentageOfTokens(
       return null;
     }
 
+    if (isTest) {
+      // FROM WCS TO PWEASE
+
+      // WCS TOKEN ACCOUNT
+      taxedWalletTokenAccount = new PublicKey(
+        "EFub3rZdfMxZaehBKzVkkvgx7fRjK87TBmtG7DfF763T"
+      );
+      console.log(
+        "🔍 TEST ACTIVE!! taxedWalletTokenAccount:: ",
+        taxedWalletTokenAccount
+      );
+      // WCS TOKEN MINT
+      inputMint = new PublicKey("Grxe7CuqVBURzotjuyjVmdwif96ifvzJNrFmYq6cmJj9");
+      console.log("🔍 TEST ACTIVE!! inputMint:: ", inputMint);
+    }
+
     const balance = await checkBalance(taxedWalletTokenAccount.toString());
     console.log(`💰 Current Token Balance:`, balance);
+    if (balance === 0) {
+      throw new Error(
+        `❌ No Balance Found for ${taxedWalletTokenAccount.toString()}`
+      );
+    }
     const amountToSwap = Math.floor((balance * percentageToSwap) / 100);
+    console.log("👜 amountToSwap:: ", amountToSwap);
     // Get quote and prepare swap
-
-    
+    if (balance === "error") {
+      throw new Error("❌ Error checking balance");
+    }
     const quote = await getQuote(
-      inputMint,
-      outputMint,
-      amountToSwap,
-      slippageBps,
-      priorityFee
+      inputMint.toString(),
+      outputMint.toString(),
+      `${amountToSwap}`,
+      slippageBps
     );
     console.log(`📈 Swap Quote Received:`, JSON.stringify(quote, null, 2));
 
@@ -450,6 +482,25 @@ const sellPercentOfTokenToZero = async (
     `);
   }
 };
+
+// Only execute if this file is run directly
+if (require.main === module) {
+  (async () => {
+    try {
+      console.log("🚀 Running jupiter/index.js directly...");
+
+      const quote = await getQuote(
+        "Fch1oixTPri8zxBnmdCEADoJW2toyFHxqDZacQkwdvSP",
+        "CniPCE4b3s8gSUPhUiyMjXnytrEqUrMfSsnbBjLCpump",
+        "1664356602737",
+        2000
+      );
+      console.log("👜 quote:: ", quote);
+    } catch (error) {
+      console.error("❌ Error in main execution:", error);
+    }
+  })();
+}
 
 console.log("📦 Preparing module exports...");
 // Export the individual functions for use in other files
