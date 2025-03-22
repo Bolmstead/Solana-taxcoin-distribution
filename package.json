@@ -17,7 +17,8 @@
     "solana": "node src/config/solana.js",
     "testWithdraw": "node src/helpers/testWithdrawDemo.js",
     "jupiter": "node src/jupiter/index.js",
-    "testTokenAccount": "node src/helpers/testTokenAccount.js"
+    "testTokenAccount": "node src/helpers/testTokenAccount.js",
+    "requestAirdrop": "node src/helpers/requestAirdrop.js"
   },
   "keywords": [
     "solana",

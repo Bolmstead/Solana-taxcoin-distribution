@@ -29,21 +29,7 @@ const decimals = 6;
 const taxedTokenSupply = 1000000000;
 const minAmountOfHoldingsForRewards = 100000;
 
-console.log("[Solana Config] 🪙 TAXED_TOKEN_ADDRESS:", TAXED_TOKEN_ADDRESS);
-console.log("[Solana Config] 🎁 REWARDS_TOKEN_ADDRESS:", REWARDS_TOKEN_ADDRESS);
-console.log(
-  "[Solana Config] 🔑 DISTRIBUTOR_WALLET_PRIVATE_KEY:",
-  DISTRIBUTOR_WALLET_PRIVATE_KEY
-);
-console.log(
-  "[Solana Config] 🔐 WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY:",
-  WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY
-);
-console.log("[Solana Config] 💰 DIST:", DIST);
-console.log(
-  "[Solana Config] 💎 TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT:",
-  TEST_DISTRIBUTOR_REWARDS_TOKEN_ACCOUNT
-);
+
 
 // Initialize connection to Solana network
 const getRpcUrl = () => {
@@ -200,6 +186,9 @@ try {
   );
   process.exit(1);
 }
+
+
+
 
 module.exports = {
   connection,

@@ -144,9 +144,18 @@ const getAllTokenHolders = async (mintString, totalRewardsBalance) => {
   }
   return accounts;
 };
-const execute = async () => {
+const runLottery = async (timeframe) => {
   try {
-    const isTest = true;
+    if (timeframe === "daily") {
+      // 1 DAY
+      console.log("🔄 [Main] Running daily lottery drawing...");
+    } else if (timeframe === "hourly") {
+      // 1 HOUR
+      console.log("🔄 [Main] Running hourly lottery drawing...");
+    } else if (timeframe === "10min") {
+      // 10 MIN
+      console.log("🔄 [Main] Running 10 minute lottery drawing...");
+    }
 
     const taxWithdrawalResult = await executeTaxWithdrawal(
       distributorWalletTaxedTokenAccount
@@ -163,16 +172,11 @@ const execute = async () => {
 
     let percentageToSwap = 100;
 
-    let tokenMintAddress = isTest
-      ? "Grxe7CuqVBURzotjuyjVmdwif96ifvzJNrFmYq6cmJj9"
-      : taxedTokenMintAddress;
-
     const swapResult = await swapPercentageOfTokens(
-      isTest,
       percentageToSwap,
       distributorWallet,
       distributorWalletTaxedTokenAccount,
-      tokenMintAddress,
+      taxedTokenMintAddress,
       rewardsTokenMintAddress,
       (slippageBps = 2000)
     );
@@ -191,9 +195,7 @@ const execute = async () => {
     }
 
     const holders = await getAllTokenHolders(
-      isTest
-        ? "Grxe7CuqVBURzotjuyjVmdwif96ifvzJNrFmYq6cmJj9"
-        : taxedTokenMintAddress.toString(),
+      taxedTokenMintAddress.toString(),
       totalTokenRewards
     );
     const discountedRewards = totalTokenRewards * 0.5;
@@ -204,16 +206,71 @@ const execute = async () => {
   }
 };
 
+const withdrawAndSwap = async () => {
+  const taxWithdrawalResult = await executeTaxWithdrawal(
+    distributorWalletTaxedTokenAccount
+  );
+  console.log("📝 [Main] Tax withdrawal result:", taxWithdrawalResult);
+
+  if (taxWithdrawalResult.signature) {
+    console.log("✅ [Main] Tax withdrawal successful!");
+  } else if (taxWithdrawalResult.status === "No Accounts") {
+    console.log("🤷‍♀️ [Main] No tax to withdraw. continuing...");
+  } else {
+    console.error("❌ [Main] Tax withdrawal failed");
+  }
+
+  let percentageToSwap = 100;
+
+  const swapResult = await swapPercentageOfTokens(
+    percentageToSwap,
+    distributorWallet,
+    distributorWalletTaxedTokenAccount,
+    taxedTokenMintAddress,
+    rewardsTokenMintAddress,
+    (slippageBps = 2000)
+  );
+  console.log("🔄 [Main] Swap result:", swapResult);
+
+  const { status, totalTokenRewards } = swapResult;
+  console.log("📊 [Main] Swap status and rewards:", status, totalTokenRewards);
+};
+
 module.exports = {
   getTokenHolders,
   getAllTokenHolders,
-  execute,
+  withdrawAndSwap,
+  runLottery,
 };
 
 // Only run if called directly
 if (require.main === module) {
-  cron.schedule("*/1 * * * *", async () => {
+  // 1 MIN
+  // Runs every minute EXCEPT :00, :10, :20, :30, :40, :50
+  cron.schedule("1-9,11-19,21-29,31-39,41-49,51-59 * * * *", async () => {
     console.log("Running scheduled distribution...");
-    await execute();
+    await withdrawAndSwap();
+    await getRandomDrawingTimes();
+  });
+
+  // 10 MIN
+  // Runs every 10 minutes (e.g., :00, :10, :20, :30, :40, :50)
+  cron.schedule("*/10 * * * *", async () => {
+    console.log("Running scheduled distribution...");
+    await runLottery("10min");
+  });
+
+  // 1 HOUR
+  // Runs at the start of every hour (e.g., 1:00, 2:00, 3:00, etc.)
+  cron.schedule("0 * * * *", async () => {
+    console.log("Running scheduled distribution...");
+    await runLottery("hourly");
+  });
+
+  // 1 DAY
+  // Runs every day at 00:00
+  cron.schedule("0 0 * * *", async () => {
+    console.log("Running scheduled distribution...");
+    await runLottery("daily");
   });
 }

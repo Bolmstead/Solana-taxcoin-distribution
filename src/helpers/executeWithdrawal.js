@@ -17,6 +17,8 @@ const dotenv = require("dotenv");
 const bs58 = require("bs58").default;
 dotenv.config();
 
+const BATCH_SIZE = 10; // Process 10 accounts at a time
+
 async function executeTaxWithdrawal(destinationTokenAccount) {
   console.log(
     "🔑 Distributor Wallet Private Key:",
@@ -74,7 +76,6 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
         taxedTokenProgramID
       );
 
-      // We then extract the transfer fee extension data from the account
       const transferFeeAmount = getTransferFeeAmount(account);
 
       if (
@@ -85,7 +86,6 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
           "💰 Found account with withheld fees:",
           accountInfo.pubkey.toString()
         );
-
         console.log(
           "   Withheld amount:",
           transferFeeAmount.withheldAmount.toString()
@@ -116,19 +116,10 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
     );
   }
 
-  console.log("🚀 Initiating withdrawal transaction...");
+  console.log("🚀 Initiating withdrawal transactions...");
   try {
     // First try withdrawing from the mint
     console.log("Attempting to withdraw from mint...");
-    console.log("🚕 payer:: ", payer);
-    console.log("🚕 taxedTokenMintAddress:: ", taxedTokenMintAddress);
-    console.log("🚕 recipientKeypair.publicKey:: ", recipientKeypair.publicKey);
-    console.log(
-      "🚕 withdrawWithheldAuthority:: ",
-      withdrawWithheldAuthority.publicKey
-    );
-    console.log("🚕 destinationTokenAccount:: ", destinationTokenAccount);
-
     const withdrawFromMintSig = await withdrawWithheldTokensFromMint(
       connection,
       payer,
@@ -145,27 +136,51 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
       `\n🔗 https://solana.fm/tx/${withdrawFromMintSig}?cluster=devnet-solana`
     );
 
-    // Then try withdrawing from accounts
-    console.log("\nAttempting to withdraw from accounts...");
-    const withdrawTokensSig = await withdrawWithheldTokensFromAccounts(
-      connection,
-      payer,
-      taxedTokenMintAddress,
-      destinationTokenAccount,
-      withdrawWithheldAuthority,
-      [],
-      accountsToWithdrawFrom,
-      undefined,
-      taxedTokenProgramID
-    );
+    // Process accounts in batches
+    console.log("\nAttempting to withdraw from accounts in batches...");
+    const signatures = [];
 
-    console.log(
-      "💼 Account withdrawal successful! Check transaction:",
-      `\n🔗 https://solana.fm/tx/${withdrawTokensSig}?cluster=devnet-solana`
-    );
+    for (let i = 0; i < accountsToWithdrawFrom.length; i += BATCH_SIZE) {
+      const batch = accountsToWithdrawFrom.slice(i, i + BATCH_SIZE);
+      console.log(
+        `\nProcessing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(
+          accountsToWithdrawFrom.length / BATCH_SIZE
+        )}`
+      );
+      console.log(`Batch size: ${batch.length} accounts`);
+
+      try {
+        const withdrawTokensSig = await withdrawWithheldTokensFromAccounts(
+          connection,
+          payer,
+          taxedTokenMintAddress,
+          destinationTokenAccount,
+          withdrawWithheldAuthority,
+          [],
+          batch,
+          undefined,
+          taxedTokenProgramID
+        );
+
+        console.log(
+          "💼 Batch withdrawal successful! Check transaction:",
+          `\n🔗 https://solana.fm/tx/${withdrawTokensSig}?cluster=devnet-solana`
+        );
+        signatures.push(withdrawTokensSig);
+      } catch (batchError) {
+        console.error(
+          `❌ Error processing batch ${i / BATCH_SIZE + 1}:`,
+          batchError.message
+        );
+        // Continue with next batch even if current one fails
+      }
+    }
+
     return {
-      signature: withdrawTokensSig,
+      signature: signatures,
       status: "success",
+      totalBatches: Math.ceil(accountsToWithdrawFrom.length / BATCH_SIZE),
+      successfulBatches: signatures.length,
     };
   } catch (error) {
     console.error("❌ Withdrawal failed:", error.message);
@@ -177,20 +192,6 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
     }
     throw error;
   }
-
-  // Optionally - you can also withdraw withheld tokens from the mint itself
-  // see ReadMe for the difference
-
-  // await withdrawWithheldTokensFromMint(
-  //   connection, // connection to use
-  //   payer, // payer of the transaction fee
-  //   mint, // the token mint
-  //   recipientKeypair.publicKey, // the destination account
-  //   withdrawWithheldAuthority, // the withdraw withheld authority
-  //   [], // signing accounts
-  //   undefined, // options for confirming the transaction
-  //   taxedTokenProgramID // SPL token program id
-  // );
 }
 
 module.exports = {

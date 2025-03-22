@@ -91,7 +91,6 @@ async function getSwapResponse(wallet, quote) {
 }
 
 async function swapPercentageOfTokens(
-  isTest,
   percentageToSwap,
   walletKeypair,
   taxedWalletTokenAccount,
@@ -101,7 +100,6 @@ async function swapPercentageOfTokens(
 ) {
   console.log(`
 🔄 Initiating Token Swap:
-🔍 isTest: ${isTest}
 👛 Wallet.publicKey.toString(): ${walletKeypair.publicKey.toString()}
 💰 Percentage to Swap: ${percentageToSwap}%
 📥 Input Token: ${inputMint}
@@ -130,25 +128,6 @@ async function swapPercentageOfTokens(
     if (!walletKeypair) {
       console.error("❌ Wallet not found");
       return null;
-    }
-
-    if (isTest) {
-      // FROM WCS TO PWEASE
-
-      // WCS TOKEN ACCOUNT
-      taxedWalletTokenAccount = new PublicKey(
-        "EFub3rZdfMxZaehBKzVkkvgx7fRjK87TBmtG7DfF763T"
-      );
-      console.log(
-        "🚨🚨🚨🚨🚨🚨🚨 TEST ACTIVE!! taxedWalletTokenAccount:: ",
-        taxedWalletTokenAccount
-      );
-      // WCS TOKEN MINT
-      inputMint = new PublicKey("Grxe7CuqVBURzotjuyjVmdwif96ifvzJNrFmYq6cmJj9");
-      console.log("🚨🚨🚨🚨🚨🚨🚨 TEST ACTIVE!! inputMint:: ", inputMint);
-
-      // WCS TOKEN PROGRAM
-      taxedTokenProgramID = TOKEN_PROGRAM_ID;
     }
 
     const balance = await checkBalance(

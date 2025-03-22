@@ -1,0 +1,19 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+tax_token = "YOUR_PROGRAM_ID"
+
+[programs.mainnet]
+tax_token = "YOUR_PROGRAM_ID"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "/path/to/your/wallet.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
