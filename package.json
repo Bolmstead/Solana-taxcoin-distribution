@@ -5,8 +5,7 @@
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
-    "execute": "node src/helpers/tokenHolders.js",
-    "holders": "node src/helpers/tokenHolders.js",
+    "rewards": "node src/rewards.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "distribute": "node src/helpers/tokenDistribution.js",
     "checkBalance": "node src/helpers/checkBalance.js",
@@ -18,7 +17,8 @@
     "testWithdraw": "node src/helpers/testWithdrawDemo.js",
     "jupiter": "node src/jupiter/index.js",
     "testTokenAccount": "node src/helpers/testTokenAccount.js",
-    "requestAirdrop": "node src/helpers/requestAirdrop.js"
+    "requestAirdrop": "node src/helpers/requestAirdrop.js",
+    "getAccounts": "node src/helpers/getTokenAcctsPrgIds.js"
   },
   "keywords": [
     "solana",
@@ -33,6 +33,7 @@
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.0",
     "axios": "^1.8.2",
+    "bn.js": "^5.2.1",
     "bs58": "^6.0.0",
     "dotenv": "^16.4.7",
     "node-cron": "^3.0.3",

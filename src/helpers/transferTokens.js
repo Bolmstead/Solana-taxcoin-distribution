@@ -87,7 +87,7 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
         recipientPublicKey,
         true,
         rewardsTokenProgramID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
+        TOKEN_PROGRAM_ID
       );
       console.log(
         "🚀 ~ transferTokensToMultipleAddresses ~ associatedTokenAddress:",
@@ -115,18 +115,36 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
           distributorWallet.publicKey, // payer
           associatedTokenAddress, // ata
           recipientPublicKey, // owner
-          rewardsTokenMintAddress // mint
+          rewardsTokenMintAddress, // mint
+          rewardsTokenProgramID // program ID
         );
         transaction.add(createAtaInstruction);
         console.log("✅ [Transfer] ATA creation instruction added");
       }
+
+      console.log("👨‍💼 [Transfer] fromTokenAccount:", fromTokenAccount);
+      console.log(
+        "👨‍💼 [Transfer] associatedTokenAddress:",
+        associatedTokenAddress
+      );
+      console.log(
+        "👨‍💼 [Transfer] distributorWallet.publicKey:",
+        distributorWallet.publicKey
+      );
+      console.log("👨‍💼 [Transfer] rewardAmount:", rewardAmount);
+      console.log(
+        "👨‍💼 [Transfer] rewardsTokenProgramID:",
+        rewardsTokenProgramID
+      );
 
       // Create transfer instruction
       const transferInstruction = createTransferInstruction(
         fromTokenAccount,
         associatedTokenAddress,
         distributorWallet.publicKey,
-        rewardAmount
+        rewardAmount,
+        [],
+        rewardsTokenProgramID
       );
       console.log("📋 [Transfer] Transfer instruction created");
 
@@ -282,7 +300,7 @@ async function batchTransferTokens(recipients, balance) {
   console.log("├─ 📦 Total batches processed:", allSignatures.length);
   console.log("├─ 👥 Total recipients processed:", processedCount);
   console.log(
-    "├─ �� Average recipients per batch:",
+    "├─ 📉 Average recipients per batch:",
     (processedCount / allSignatures.length).toFixed(2)
   );
   console.log("└─ 📜 All transaction signatures:");

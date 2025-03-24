@@ -7,29 +7,27 @@ const {
 } = require("@solana/spl-token");
 const bs58 = require("bs58");
 
-const TAXED_TOKEN_ADDRESS = process.env.UPW_COIN_ADDRESS;
-let taxedTokenProgramID = TOKEN_2022_PROGRAM_ID;
+const TAXED_TOKEN_ADDRESS = process.env.MRR_COIN_ADDRESS;
+let TAXED_TOKEN_PROGRAM_ID = process.env.MRR_COIN_PROGRAM_ID;
 
-const REWARDS_TOKEN_ADDRESS = process.env.PWEASE_COIN_ADDRESS;
-let rewardsTokenProgramID = TOKEN_PROGRAM_ID;
-
-const DISTRIBUTOR_WALLET_PRIVATE_KEY =
-  process.env.UPW_DISTRIBUTOR_WALLET_PRIVATE_KEY;
+const REWARDS_TOKEN_ADDRESS = process.env.ROUTINE_COIN_ADDRESS;
+let REWARDS_TOKEN_PROGRAM_ID = process.env.ROUTINE_COIN_PROGRAM_ID;
 
 const WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY =
-  process.env.UPW_WITHDRAW_AUTHORITY_PRIVATE_KEY;
+  process.env.WITHDRAW_AUTHORITY_WALLET_PRIVATE_KEY;
+
+const DISTRIBUTOR_WALLET_PRIVATE_KEY =
+  process.env.DISTRIBUTOR_WALLET_PRIVATE_KEY;
 
 const DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT =
-  process.env.UPW_DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT;
+  process.env.DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT;
 
 const DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT =
-  process.env.UPW_DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT;
+  process.env.DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT;
 
 const decimals = 6;
 const taxedTokenSupply = 1000000000;
 const minAmountOfHoldingsForRewards = 100000;
-
-
 
 // Initialize connection to Solana network
 const getRpcUrl = () => {
@@ -143,19 +141,22 @@ try {
   process.exit(1);
 }
 
-// Token mint
+// distributor wallet taxed token account
 let distributorWalletTaxedTokenAccount;
 try {
   if (!DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT) {
-    throw new Error("[Solana Config] 💰 DIST is not set in .env file");
+    console.log(
+      "[Solana Config] 🚨🚨🚨 DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT is not set in .env file 🚨🚨🚨"
+    );
+  } else {
+    distributorWalletTaxedTokenAccount = new PublicKey(
+      DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT
+    );
+    console.log(
+      "[Solana Config] 💰 Taxed Token mint initialized:",
+      distributorWalletTaxedTokenAccount.toBase58()
+    );
   }
-  distributorWalletTaxedTokenAccount = new PublicKey(
-    DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT
-  );
-  console.log(
-    "[Solana Config] 💰 Taxed Token mint initialized:",
-    distributorWalletTaxedTokenAccount.toBase58()
-  );
 } catch (error) {
   console.error(
     "[Solana Config] 💰 Taxed Token mint initialization error:",
@@ -164,21 +165,22 @@ try {
   process.exit(1);
 }
 
-// Token mint
+// distributor wallet rewards token account
 let distributorWalletRewardsTokenAccount;
 try {
   if (!DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT) {
-    throw new Error(
-      "[Solana Config] 💎 DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT is not set in .env file"
+    console.log(
+      "[Solana Config] 🚨🚨🚨 DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT is not set in .env file 🚨🚨🚨"
+    );
+  } else {
+    distributorWalletRewardsTokenAccount = new PublicKey(
+      DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT
+    );
+    console.log(
+      "[Solana Config] 💎 Rewards Token mint initialized:",
+      distributorWalletRewardsTokenAccount.toBase58()
     );
   }
-  distributorWalletRewardsTokenAccount = new PublicKey(
-    DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT
-  );
-  console.log(
-    "[Solana Config] 💎 Rewards Token mint initialized:",
-    distributorWalletRewardsTokenAccount.toBase58()
-  );
 } catch (error) {
   console.error(
     "[Solana Config] 💎 Rewards Token mint initialization error:",
@@ -187,8 +189,47 @@ try {
   process.exit(1);
 }
 
+let taxedTokenProgramID;
+try {
+  if (!TAXED_TOKEN_PROGRAM_ID) {
+    console.log(
+      "[Solana Config] 🚨🚨🚨 TAXED_TOKEN_PROGRAM_ID is not set in .env file 🚨🚨🚨"
+    );
+  } else {
+    taxedTokenProgramID = new PublicKey(TAXED_TOKEN_PROGRAM_ID);
+    console.log(
+      "[Solana Config] 🚕🪪 Taxed Token Program ID initialized:",
+      taxedTokenProgramID.toBase58()
+    );
+  }
+} catch (error) {
+  console.error(
+    "[Solana Config] 🚕🪪 Taxed Token Program ID initialization error:",
+    error.message
+  );
+  process.exit(1);
+}
 
-
+let rewardsTokenProgramID;
+try {
+  if (!REWARDS_TOKEN_PROGRAM_ID) {
+    console.log(
+      "[Solana Config] 🚨🚨🚨 REWARDS_TOKEN_PROGRAM_ID is not set in .env file 🚨🚨🚨"
+    );
+  } else {
+    rewardsTokenProgramID = new PublicKey(REWARDS_TOKEN_PROGRAM_ID);
+    console.log(
+      "[Solana Config] 🤑🪪 Rewards Token Program ID initialized:",
+      rewardsTokenProgramID.toBase58()
+    );
+  }
+} catch (error) {
+  console.error(
+    "[Solana Config] 🤑🪪 Rewards Token Program ID initialization error:",
+    error.message
+  );
+  process.exit(1);
+}
 
 module.exports = {
   connection,

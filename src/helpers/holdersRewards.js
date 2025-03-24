@@ -6,21 +6,18 @@ const {
 const { PublicKey } = require("@solana/web3.js");
 const axios = require("axios");
 const {
-  tokenMint,
-  connection,
   distributorWallet,
-  TAXED_TOKEN_ADDRESS,
-  TARGET_MEME_COIN_ADDRESS,
-  TAXED_WALLET_TOKEN_ACCOUNT,
   taxedTokenMintAddress,
   rewardsTokenMintAddress,
   decimals,
   taxedTokenSupply,
   distributorWalletTaxedTokenAccount,
   minAmountOfHoldingsForRewards,
-  taxedTokenProgramID,
   rewardsTokenProgramID,
+  tokenMintAddress,
+  distributorWalletRewardsTokenAccount,
 } = require("../config/solana");
+const { checkBalance } = require("./checkBalance");
 
 const { batchTransferTokens } = require("./transferTokens");
 const { swapPercentageOfTokens } = require("../jupiter");
@@ -146,13 +143,19 @@ const getAllTokenHolders = async (mintString, totalRewardsBalance) => {
 };
 const distributeRewards = async () => {
   try {
-    let tokenMintAddress = taxedTokenMintAddress.toString();
+    let balance = await checkBalance(
+      distributorWalletRewardsTokenAccount.toString(),
+      rewardsTokenProgramID
+    );
+    console.log("🤑🤑 balance :", balance);
+    console.log("🤑🤑 taxedTokenMintAddress :", taxedTokenMintAddress);
 
-    let balance = await checkBalance(tokenMintAddress, rewardsTokenProgramID);
-
-    const holders = await getAllTokenHolders(tokenMintAddress, balance);
-    const discountedRewards = balance * 0.5;
-    const allSignatures = await batchTransferTokens(holders, discountedRewards);
+    const holders = await getAllTokenHolders(
+      taxedTokenMintAddress.toString(),
+      balance
+    );
+    console.log("🚀 ~ distributeRewards ~ holders:", holders);
+    const allSignatures = await batchTransferTokens(holders, balance);
     console.log("📝 [Main] Batch transfer signatures:", allSignatures);
   } catch (error) {
     console.error("❌ [Main] Execution error:", error);
@@ -160,6 +163,10 @@ const distributeRewards = async () => {
 };
 
 const withdrawAndSwap = async () => {
+  console.log(
+    "😈 distributorWalletTaxedTokenAccount:: ",
+    distributorWalletTaxedTokenAccount
+  );
   const taxWithdrawalResult = await executeTaxWithdrawal(
     distributorWalletTaxedTokenAccount
   );
@@ -167,8 +174,8 @@ const withdrawAndSwap = async () => {
 
   if (taxWithdrawalResult.signature) {
     console.log("✅ [Main] Tax withdrawal successful!");
-  } else if (taxWithdrawalResult.status === "No Accounts") {
-    console.log("🤷‍♀️ [Main] No tax to withdraw. continuing...");
+  } else if (taxWithdrawalResult.status === "skipped") {
+    return;
   } else {
     console.error("❌ [Main] Tax withdrawal failed");
   }
@@ -195,20 +202,3 @@ module.exports = {
   withdrawAndSwap,
   distributeRewards,
 };
-
-// Only run if called directly
-if (require.main === module) {
-  // 1 MIN
-  // Runs every minute EXCEPT :00, :10, :20, :30, :40, :50
-  cron.schedule("1-9,11-19,21-29,31-39,41-49,51-59 * * * *", async () => {
-    console.log("Running scheduled withdraw and swap...");
-    await withdrawAndSwap();
-  });
-
-  // 10 MIN
-  // Runs every 10 minutes (e.g., :00, :10, :20, :30, :40, :50)
-  cron.schedule("*/10 * * * *", async () => {
-    console.log("Running scheduled distribution...");
-    await distributeRewards();
-  });
-}

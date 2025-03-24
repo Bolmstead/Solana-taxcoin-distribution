@@ -13,6 +13,8 @@ const {
 
 async function checkBalance(accountPublicKey, tokenProgram) {
   console.log("💰 Checking token balance...");
+  console.log("💰 accountPublicKey:: ", accountPublicKey);
+  console.log("💰 tokenProgram:: ", tokenProgram);
 
   // Handle both PublicKey objects and string addresses
   let tokenAccountPublicKey;
@@ -42,7 +44,7 @@ async function checkBalance(accountPublicKey, tokenProgram) {
       connection,
       tokenAccountPublicKey,
       "confirmed",
-      tokenProgram
+      accountInfo.owner
     );
 
     console.log(
