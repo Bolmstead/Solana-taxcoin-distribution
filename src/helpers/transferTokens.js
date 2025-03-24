@@ -15,8 +15,6 @@ const {
   getAccount,
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
-  TOKEN_2022_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } = require("@solana/spl-token");
 const bs58 = require("bs58");
@@ -73,13 +71,13 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
       console.log(
         "\n📝 [Transfer] Getting associated token address with params:"
       );
-      console.log("├─ 🏦 Mint Address:", rewardsTokenMintAddress.toString());
-      console.log("├─ 👤 Recipient Public Key:", recipientPublicKey.toString());
+      console.log("├─ 🏦 Mint Address:", rewardsTokenMintAddress);
+      console.log("├─ 👤 Recipient Public Key:", recipientPublicKey);
       console.log("├─ 🔄 Allow Owner Off Curve:", true);
-      console.log("├─ 🔑 Token Program ID:", rewardsTokenProgramID.toString());
+      console.log("├─ 🔑 Token Program ID:", rewardsTokenProgramID);
       console.log(
         "└─ 🔗 Associated Token Program ID:",
-        ASSOCIATED_TOKEN_PROGRAM_ID.toString()
+        ASSOCIATED_TOKEN_PROGRAM_ID
       );
 
       const associatedTokenAddress = await getAssociatedTokenAddress(
@@ -87,7 +85,7 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
         recipientPublicKey,
         true,
         rewardsTokenProgramID,
-        TOKEN_PROGRAM_ID
+        ASSOCIATED_TOKEN_PROGRAM_ID
       );
       console.log(
         "🚀 ~ transferTokensToMultipleAddresses ~ associatedTokenAddress:",
@@ -103,12 +101,27 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
         }
         console.log("✨ [Transfer] Recipient token account exists");
       } catch (error) {
+        console.log("‼️ [Transfer] Account does not exist");
         console.log("🛠️ [Transfer] Creating token account for recipient...");
         // Create ATA instruction
         console.log("📝 [Transfer] Creating ATA instruction...");
+
         console.log(
           "👨‍💼 [Transfer] Distributor public key:",
-          distributorWallet.publicKey.toString()
+          distributorWallet.publicKey
+        );
+        console.log(
+          "👨‍💼 [Transfer] associatedTokenAddress:",
+          associatedTokenAddress
+        );
+        console.log("👨‍💼 [Transfer] recipientPublicKey:", recipientPublicKey);
+        console.log(
+          "👨‍💼 [Transfer] rewardsTokenMintAddress:",
+          rewardsTokenMintAddress
+        );
+        console.log(
+          "👨‍💼 [Transfer] rewardsTokenProgramID:",
+          rewardsTokenProgramID
         );
 
         const createAtaInstruction = createAssociatedTokenAccountInstruction(

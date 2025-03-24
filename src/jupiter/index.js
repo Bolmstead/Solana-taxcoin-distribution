@@ -139,7 +139,7 @@ async function swapPercentageOfTokens(
       console.log(
         `❌ No Balance Found for ${taxedWalletTokenAccount.toString()}`
       );
-      return null;
+      return "No Balance in Taxed Wallet Token Account";
     }
     const amountToSwap = Math.floor((balance * percentageToSwap) / 100);
     console.log("👜 amountToSwap:: ", amountToSwap);

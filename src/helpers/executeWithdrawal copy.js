@@ -57,28 +57,21 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
     }
 
     console.log("🔍 Fetching all token accounts...");
-    console.log("🔍 Using Token Program ID:", TOKEN_2022_PROGRAM_ID.toString());
+    console.log("🔍 Using Token Program ID:", TOKEN_PROGRAM_ID.toString());
 
     // Get all token accounts for the taxed token mint
-    const tokenAccounts = await connection.getProgramAccounts(
-      TOKEN_2022_PROGRAM_ID,
+    const tokenAccounts = await connection.getTokenAccountsByOwner(
+      withdrawAuthorityWallet.publicKey,
       {
-        filters: [
-          {
-            memcmp: {
-              offset: 0, // Token account mint offset
-              bytes: taxedTokenMintAddress.toBase58(),
-            },
-          },
-        ],
+        mint: taxedTokenMintAddress,
       }
     );
     console.log("🚀 ~ executeTaxWithdrawal ~ tokenAccounts:", tokenAccounts);
 
-    console.log("📊 Total token accounts found:", tokenAccounts.length);
+    console.log("📊 Total token accounts found:", tokenAccounts.value.length);
 
     const accountsToWithdrawFrom = [];
-    for (const account of tokenAccounts) {
+    for (const account of tokenAccounts.value) {
       try {
         const accountData = unpackAccount(
           account.pubkey,
@@ -144,7 +137,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
         withdrawWithheldAuthority,
         [],
         undefined,
-        TOKEN_2022_PROGRAM_ID
+        TOKEN_PROGRAM_ID
       );
 
       console.log(
@@ -180,7 +173,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
         [],
         batch,
         undefined,
-        TOKEN_2022_PROGRAM_ID
+        TOKEN_PROGRAM_ID
       );
 
       console.log(
@@ -197,7 +190,7 @@ async function executeTaxWithdrawal(destinationTokenAccount) {
       successfulBatches: signatures.length,
     };
   } catch (error) {
-    console.error("❌ Withdrawal failed:", error);
+    console.error("❌ Withdrawal failed:", error.message);
     if (error.logs) {
       console.error("Transaction logs:", error.logs);
     }

@@ -149,7 +149,14 @@ const distributeRewards = async () => {
     );
     console.log("🤑🤑 balance :", balance);
     console.log("🤑🤑 taxedTokenMintAddress :", taxedTokenMintAddress);
+    if (balance < 1000000000) {
+      console.log("🧌🧌🧌 balance is less than 1000000000");
+      console.log("🧌🧌🧌 too poor to distribute rewards!");
 
+      return;
+    }
+
+    balance = balance * 0.5;
     const holders = await getAllTokenHolders(
       taxedTokenMintAddress.toString(),
       balance
@@ -178,6 +185,7 @@ const withdrawAndSwap = async () => {
     return;
   } else {
     console.error("❌ [Main] Tax withdrawal failed");
+    return;
   }
 
   let percentageToSwap = 100;
@@ -194,6 +202,7 @@ const withdrawAndSwap = async () => {
 
   const { status, totalTokenRewards } = swapResult;
   console.log("📊 [Main] Swap status and rewards:", status, totalTokenRewards);
+  return;
 };
 
 module.exports = {

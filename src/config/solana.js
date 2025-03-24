@@ -131,7 +131,8 @@ try {
   );
   withdrawAuthorityWallet = Keypair.fromSecretKey(privateKeyBytes);
   console.log(
-    "[Solana Config] 🔑 Withdraw Authority Wallet initialized successfully."
+    "[Solana Config] 🔑 Withdraw Authority Wallet initialized successfully. public key:",
+    withdrawAuthorityWallet.publicKey.toBase58()
   );
 } catch (error) {
   console.error(
@@ -153,13 +154,13 @@ try {
       DISTRIBUTOR_WALLET_TAXED_TOKEN_ACCOUNT
     );
     console.log(
-      "[Solana Config] 💰 Taxed Token mint initialized:",
+      "[Solana Config] 💰 Distributor Wallet Taxed Token Account initialized:",
       distributorWalletTaxedTokenAccount.toBase58()
     );
   }
 } catch (error) {
   console.error(
-    "[Solana Config] 💰 Taxed Token mint initialization error:",
+    "[Solana Config] 💰 Distributor Wallet Taxed Token Account initialization error:",
     error.message
   );
   process.exit(1);
@@ -177,13 +178,13 @@ try {
       DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT
     );
     console.log(
-      "[Solana Config] 💎 Rewards Token mint initialized:",
+      "[Solana Config] 💎 Distributor Wallet Rewards Token Account initialized:",
       distributorWalletRewardsTokenAccount.toBase58()
     );
   }
 } catch (error) {
   console.error(
-    "[Solana Config] 💎 Rewards Token mint initialization error:",
+    "[Solana Config] 💎 Distributor Wallet Rewards Token Account initialization error:",
     error.message
   );
   process.exit(1);
