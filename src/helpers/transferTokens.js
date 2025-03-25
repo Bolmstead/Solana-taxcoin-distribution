@@ -9,6 +9,7 @@ const {
   rewardsTokenMintAddress,
   distributorWalletRewardsTokenAccount,
   rewardsTokenProgramID,
+  maxInstructionsPerBatch,
 } = require("../config/solana");
 const {
   createTransferInstruction,
@@ -23,9 +24,14 @@ const bs58 = require("bs58");
  * Send tokens from the distributor wallet to multiple recipients in a single transaction
  * @param {Object} recipients - Object containing recipient addresses as keys and their reward details as values
  * @param {number} balance - Current balance available for distribution
+ * @param {string} blockhash - Blockhash to use for the transaction
  * @returns {Promise<string>} - Transaction signature
  */
-async function transferTokensToMultipleAddresses(recipients, balance) {
+async function transferTokensToMultipleAddresses(
+  recipients,
+  balance,
+  blockhash
+) {
   try {
     const transaction = new Transaction();
     let totalrewardAmount = 0;
@@ -39,6 +45,18 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
       "🏦 [Transfer] Distributor token account:",
       fromTokenAccount.toString()
     );
+
+    // Randomize the order of recipients
+    const recipientEntries = Object.entries(recipients);
+    for (let i = recipientEntries.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [recipientEntries[i], recipientEntries[j]] = [
+        recipientEntries[j],
+        recipientEntries[i],
+      ];
+    }
+    recipients = Object.fromEntries(recipientEntries);
+    console.log("🎲 [Transfer] Randomized recipient order");
 
     // Add transfer instructions for each recipient
     for (const recipientAddress in recipients) {
@@ -173,14 +191,18 @@ async function transferTokensToMultipleAddresses(recipients, balance) {
       return null;
     }
 
-    // Set a recent blockhash for the transaction
-    transaction.recentBlockhash = (
-      await connection.getLatestBlockhash()
-    ).blockhash;
-    console.log("🔒 [Transfer] Recent blockhash set");
+    // Use the provided blockhash instead of getting a new one
+    transaction.recentBlockhash = blockhash;
+    console.log("🔒 [Transfer] Using provided blockhash");
 
     transaction.feePayer = distributorWallet.publicKey;
     console.log("💳 [Transfer] Fee payer set");
+
+    // // Add priority fees to make transaction process faster
+    // transaction.instructions.forEach((ix) => {
+    //   ix.computeUnitPriceMicroLamports = 10000; // Set priority fee
+    // });
+    // console.log("⚡ [Transfer] Added priority fees to instructions");
 
     // Send and confirm the transaction
     const signature = await sendAndConfirmTransaction(connection, transaction, [
@@ -238,7 +260,7 @@ async function batchTransferTokens(recipients, balance) {
 
     currentBatch = {};
     let instructionCount = 0;
-    const MAX_INSTRUCTIONS_PER_BATCH = 10; // Conservative limit to ensure we stay under size limit
+    const MAX_INSTRUCTIONS_PER_BATCH = maxInstructionsPerBatch; // Conservative limit to ensure we stay under size limit
 
     // Try adding recipients to the current batch until we hit the instruction limit
     for (const [address, details] of Object.entries(remainingRecipients)) {
@@ -271,10 +293,19 @@ async function batchTransferTokens(recipients, balance) {
       console.log("🔄 Transferring tokens to multiple addresses...");
       console.log("📦 Current batch:", currentBatch);
       console.log("💰 Balance:", balance);
+
+      // Get fresh blockhash for this batch
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash("confirmed");
+      console.log("🔒 [Batch] Fresh blockhash obtained:", blockhash);
+      console.log("📊 [Batch] Last valid block height:", lastValidBlockHeight);
+
       const signature = await transferTokensToMultipleAddresses(
         currentBatch,
-        balance
+        balance,
+        blockhash // Pass the fresh blockhash
       );
+
       if (signature) {
         allSignatures.push(signature);
         processedCount += batchSize;

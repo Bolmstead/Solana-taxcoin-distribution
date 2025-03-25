@@ -28,28 +28,34 @@ const DISTRIBUTOR_WALLET_REWARDS_TOKEN_ACCOUNT =
 const decimals = 6;
 const taxedTokenSupply = 1000000000;
 const minAmountOfHoldingsForRewards = 100000;
+const maxInstructionsPerBatch = 7;
+const liquidityPoolAddress = "GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL";
 
 // Initialize connection to Solana network
 const getRpcUrl = () => {
-  if (
+  let rpcProvider;
+  if (process.env.QUICKNODE_RPC_URL) {
+    rpcProvider = process.env.QUICKNODE_RPC_URL;
+  } else if (
     process.env.HELIUS_RPC_URL &&
     process.env.SOLANA_NETWORK === "mainnet-beta"
   ) {
-    return process.env.HELIUS_RPC_URL;
+    rpcProvider = process.env.HELIUS_RPC_URL;
   } else if (
     process.env.HELIUS_DEV_NET_RPC_URL &&
     process.env.SOLANA_NETWORK !== "mainnet-beta"
   ) {
-    return process.env.HELIUS_DEV_NET_RPC_URL;
-  } else if (process.env.QUICKNODE_RPC_URL) {
-    return process.env.QUICKNODE_RPC_URL;
+    rpcProvider = process.env.HELIUS_DEV_NET_RPC_URL;
+  } else {
+    rpcProvider =
+      process.env.SOLANA_NETWORK === "mainnet-beta"
+        ? "https://api.mainnet-beta.solana.com"
+        : process.env.SOLANA_NETWORK === "testnet"
+        ? "https://api.testnet.solana.com"
+        : "https://api.devnet.solana.com";
   }
-
-  return process.env.SOLANA_NETWORK === "mainnet-beta"
-    ? "https://api.mainnet-beta.solana.com"
-    : process.env.SOLANA_NETWORK === "testnet"
-    ? "https://api.testnet.solana.com"
-    : "https://api.devnet.solana.com";
+  console.log("🔄 [Solana Config] Using RPC provider:", rpcProvider);
+  return rpcProvider;
 };
 
 const connection = new Connection(getRpcUrl(), "confirmed");
@@ -245,4 +251,6 @@ module.exports = {
   minAmountOfHoldingsForRewards,
   taxedTokenProgramID,
   rewardsTokenProgramID,
+  maxInstructionsPerBatch,
+  liquidityPoolAddress,
 };

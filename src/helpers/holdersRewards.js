@@ -9,13 +9,16 @@ const {
   distributorWallet,
   taxedTokenMintAddress,
   rewardsTokenMintAddress,
-  decimals,
   taxedTokenSupply,
   distributorWalletTaxedTokenAccount,
   minAmountOfHoldingsForRewards,
   rewardsTokenProgramID,
   tokenMintAddress,
   distributorWalletRewardsTokenAccount,
+  minRewardAmount,
+  maxRewardAmount,
+  decimals,
+  liquidityPoolAddress,
 } = require("../config/solana");
 const { checkBalance } = require("./checkBalance");
 
@@ -75,12 +78,25 @@ async function getTokenHolders(
         if (!account.amount || !account.owner || !account.address) {
           continue;
         }
+        if (
+          account.owner === liquidityPoolAddress ||
+          account.address === liquidityPoolAddress
+        ) {
+          console.log("account is a liquidity pool. Moving on...");
+          continue;
+        }
         if (account.amount > minAmountOfHoldings) {
           const percentage = account.amount / totalSupply;
           if (percentage < 0.000001) {
             continue;
           }
           const tokenRewards = Math.floor(totalRewardsBalance * percentage);
+          console.log("🚀 ~ tokenRewards:", tokenRewards);
+          if (tokenRewards < 100000) {
+            console.log("🚀 ~ tokenRewards is less than 1000");
+            console.log("continuing 🧏🏼");
+            continue;
+          }
           currentAccounts[account.owner] = {
             currentHoldings: account.amount / 10 ** decimals,
             reward: tokenRewards,
@@ -149,14 +165,14 @@ const distributeRewards = async () => {
     );
     console.log("🤑🤑 balance :", balance);
     console.log("🤑🤑 taxedTokenMintAddress :", taxedTokenMintAddress);
-    if (balance < 1000000000) {
-      console.log("🧌🧌🧌 balance is less than 1000000000");
+    if (balance < 1000 * 10 ** decimals) {
+      console.log("🧌🧌🧌 balance is less than 1000");
       console.log("🧌🧌🧌 too poor to distribute rewards!");
 
       return;
     }
 
-    balance = balance * 0.5;
+    balance = balance * 0.25;
     const holders = await getAllTokenHolders(
       taxedTokenMintAddress.toString(),
       balance

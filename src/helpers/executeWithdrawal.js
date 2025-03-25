@@ -14,6 +14,7 @@ const {
   withdrawAuthorityWallet,
   taxedTokenProgramID,
   rewardsTokenProgramID,
+  decimals,
 } = require("../config/solana.js");
 const dotenv = require("dotenv");
 const bs58 = require("bs58").default;
