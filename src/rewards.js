@@ -15,9 +15,9 @@ const {
 
 // 10 MIN
 // Runs every 10 minutes (e.g., :00, :10, :20, :30, :40, :50)
-cron.schedule("*/10 * * * *", async () => {
+cron.schedule("32 * * * *", async () => {
   console.log("🏁🏁🏁 Running scheduled distribution 🏁🏁🏁");
-  await distributeRewards();
+  await withdrawAndSwap();
   const now = new Date();
   console.log("⏰ Distribution completed at:", now.toLocaleString());
 });
